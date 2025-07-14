@@ -6,4 +6,6 @@ public class AppDbContext : DbContext
         : base(options) { }
 
     public DbSet<User> Users { get; set; } = null!;
+    public DbSet<Token> Tokens { get; set; } = null!;
+
 }
