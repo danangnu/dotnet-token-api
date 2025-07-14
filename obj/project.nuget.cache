@@ -1,11 +1,12 @@
 {
   "version": 2,
-  "dgSpecHash": "NHHXu24yBG4=",
+  "dgSpecHash": "2yQzHRaCpFw=",
   "success": true,
   "projectFilePath": "C:\\Users\\dnurdiansyah\\Documents\\Record Keeping System\\dotnet-token-api\\dotnet-token-api.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\dnurdiansyah\\.nuget\\packages\\azure.core\\1.38.0\\azure.core.1.38.0.nupkg.sha512",
     "C:\\Users\\dnurdiansyah\\.nuget\\packages\\azure.identity\\1.11.4\\azure.identity.1.11.4.nupkg.sha512",
+    "C:\\Users\\dnurdiansyah\\.nuget\\packages\\bcrypt.net-next\\4.0.3\\bcrypt.net-next.4.0.3.nupkg.sha512",
     "C:\\Users\\dnurdiansyah\\.nuget\\packages\\microsoft.aspnetcore.authentication.jwtbearer\\9.0.7\\microsoft.aspnetcore.authentication.jwtbearer.9.0.7.nupkg.sha512",
     "C:\\Users\\dnurdiansyah\\.nuget\\packages\\microsoft.aspnetcore.openapi\\9.0.5\\microsoft.aspnetcore.openapi.9.0.5.nupkg.sha512",
     "C:\\Users\\dnurdiansyah\\.nuget\\packages\\microsoft.bcl.asyncinterfaces\\1.1.1\\microsoft.bcl.asyncinterfaces.1.1.1.nupkg.sha512",
