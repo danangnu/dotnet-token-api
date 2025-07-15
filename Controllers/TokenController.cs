@@ -1,4 +1,7 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -53,5 +56,54 @@ public class TokenController : ControllerBase
         _db.SaveChanges();
 
         return Ok(token);
+    }
+
+    [Authorize]
+    [HttpPost("transfer")]
+    public async Task<IActionResult> TransferToken([FromBody] TransferTokenDto dto)
+    {
+        var token = await _db.Tokens.FindAsync(dto.TokenId);
+        if (token == null) return NotFound("Token not found.");
+
+        if (token.Status != "accepted")
+            return BadRequest("Only accepted tokens can be transferred.");
+
+        // Optional: validate that current user owns the token
+        var username = User.FindFirstValue(ClaimTypes.Name);
+        if (token.RecipientUsername != username)
+            return Forbid("You are not the owner of this token.");
+
+        // Create a new token for the new recipient
+        var newToken = new Token
+        {
+            IssuerUsername = username!,
+            RecipientUsername = dto.NewRecipientUsername,
+            Amount = token.Amount,
+            Status = "pending",
+            IssuedAt = DateTime.UtcNow,
+            Remarks = dto.Remarks
+        };
+
+        await _db.Tokens.AddAsync(newToken);
+        await _db.SaveChangesAsync();
+
+        return Ok(new { message = "Token transferred." });
+    }
+
+    [Authorize]
+    [HttpGet("history")]
+    public async Task<IActionResult> GetHistory([FromQuery] string username)
+    {
+        // Ensure user is requesting their own history
+        var user = User.FindFirstValue(ClaimTypes.Name);
+        if (user != username)
+            return Forbid("Unauthorized access to history");
+
+        var tokens = await _db.Tokens
+            .Where(t => t.IssuerUsername == username || t.RecipientUsername == username)
+            .OrderByDescending(t => t.IssuedAt)
+            .ToListAsync();
+
+        return Ok(tokens);
     }
 }

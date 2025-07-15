@@ -10,4 +10,6 @@ public class Token
     public string Status { get; set; } = "pending"; // pending | accepted | rejected
 
     public DateTime IssuedAt { get; set; } = DateTime.UtcNow;
+    public string? Remarks { get; set; }
+
 }
