@@ -1,7 +1,9 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Google.Apis.Auth;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
 [ApiController]
@@ -83,5 +85,128 @@ public class AuthController : ControllerBase
         var jwt = new JwtSecurityTokenHandler().WriteToken(token);
 
         return Ok(new { token = jwt });
+    }
+
+    [HttpPost("google-login")]
+    public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginDto dto)
+    {
+        try
+        {
+            // 1. Verify token using Google API
+            var payload = await GoogleJsonWebSignature.ValidateAsync(dto.IdToken);
+
+            var email = payload.Email;
+            var name = payload.Name;
+
+            if (string.IsNullOrWhiteSpace(email))
+                return BadRequest("Invalid Google account.");
+
+            // 2. Check if user exists, otherwise create
+            var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email);
+            if (user == null)
+            {
+                user = new User
+                {
+                    Email = email,
+                    Username = email.Split('@')[0], // generate username
+                    Name = name,
+                    Role = "User" // default
+                };
+                _db.Users.Add(user);
+                await _db.SaveChangesAsync();
+            }
+
+            // 3. Generate JWT for your app
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var key = Encoding.UTF8.GetBytes(_config["Jwt:Key"]);
+
+            var claims = new[]
+            {
+                new Claim(ClaimTypes.Name, user.Username),
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Role, user.Role ?? "User")
+            };
+
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(claims),
+                Expires = DateTime.UtcNow.AddDays(7),
+                SigningCredentials = new SigningCredentials(
+                    new SymmetricSecurityKey(key),
+                    SecurityAlgorithms.HmacSha256Signature)
+            };
+
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            var jwt = tokenHandler.WriteToken(token);
+
+            return Ok(new { token = jwt });
+        }
+        catch (InvalidJwtException)
+        {
+            return Unauthorized("Invalid Google token");
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Server error: {ex.Message}");
+        }
+    }
+
+    [HttpPost("apple-login")]
+    public async Task<IActionResult> AppleLogin([FromBody] AppleLoginDto dto)
+    {
+        try
+        {
+            var handler = new JwtSecurityTokenHandler();
+
+            if (!handler.CanReadToken(dto.IdentityToken))
+                return BadRequest("Invalid identity token");
+
+            var jwt = handler.ReadJwtToken(dto.IdentityToken);
+            var email = jwt.Claims.FirstOrDefault(c => c.Type == "email")?.Value;
+            var userId = jwt.Claims.FirstOrDefault(c => c.Type == "sub")?.Value;
+
+            if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(userId))
+                return BadRequest("Missing email or subject in token");
+
+            // Optional: verify the signature (see advanced section below)
+            // For most cases, you can skip if identityToken came directly from Apple
+
+            // Look up or create user
+            var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email);
+            if (user == null)
+            {
+                user = new User
+                {
+                    Email = email,
+                    Username = email.Split('@')[0], // simple username
+                    Name = "Apple User",
+                    Role = "User"
+                };
+                _db.Users.Add(user);
+                await _db.SaveChangesAsync();
+            }
+
+            // Generate your JWT
+            var key = Encoding.UTF8.GetBytes(_config["Jwt:Key"]);
+            var claims = new[]
+            {
+                new Claim(ClaimTypes.Name, user.Username),
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Role, user.Role ?? "User")
+            };
+
+            var token = new JwtSecurityTokenHandler().CreateToken(new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(claims),
+                Expires = DateTime.UtcNow.AddDays(7),
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256)
+            });
+
+            return Ok(new { token = new JwtSecurityTokenHandler().WriteToken(token) });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Apple login error: {ex.Message}");
+        }
     }
 }
