@@ -14,21 +14,76 @@ public class TokenController : ControllerBase
         _db = db;
     }
 
-    // POST: /api/token/issue
-    [HttpPost("issue")]
-    public IActionResult IssueToken([FromBody] Token token)
+    private string? GetCurrentUserId()
     {
-        if (token.Amount <= 0)
+        return User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+    }
+
+    [Authorize]
+    [HttpGet("accepted")]
+    public IActionResult GetAcceptedTokensForCurrentUser()
+    {
+        var username = User.FindFirstValue(ClaimTypes.Name);
+        var tokens = _db.Tokens
+            .Where(t => t.RecipientUsername == username && t.Status == "accepted")
+            .Select(t => new {
+                t.Id,
+                t.RecipientUsername,
+                t.RecipientName,
+                t.Amount
+            })
+            .ToList();
+
+        return Ok(tokens);
+    }
+
+
+    // POST: /api/token/issue
+    [Authorize]
+    [HttpPost("issue")]
+    public IActionResult IssueToken([FromBody] IssueTokenDto dto)
+    {
+        if (dto.Amount <= 0)
             return BadRequest("Invalid amount.");
 
-        token.Status = "pending";
-        token.IssuedAt = DateTime.UtcNow;
+        var issuerUsername = User.FindFirstValue(ClaimTypes.Name);
+
+        var issuerIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        Console.WriteLine($"[DEBUG] Issuer ID: {issuerIdStr}");
+
+        if (!int.TryParse(issuerIdStr, out var issuerId))
+        {
+            return Unauthorized("Invalid user ID.");
+        }
+
+        if (string.IsNullOrEmpty(issuerUsername) || string.IsNullOrEmpty(dto.Recipient))
+            return BadRequest("Invalid issuer or recipient.");
+
+        // Optional: fetch recipient details from DB if needed (e.g., full name, ID)
+        var recipientUser = _db.Users.FirstOrDefault(u => u.Username == dto.Recipient);
+        if (recipientUser == null)
+            return NotFound("Recipient user not found.");
+
+        var token = new Token
+        {
+            IssuerUsername = issuerUsername,
+            IssuerId = issuerId,
+            RecipientUsername = dto.Recipient,
+            RecipientId = recipientUser.Id,
+            RecipientName = recipientUser.Name,
+            Amount = dto.Amount,
+            Remarks = dto.Remarks,
+            Status = "pending",
+            IssuedAt = DateTime.UtcNow,
+            ExpirationDate = dto.ExpirationDate
+        };
 
         _db.Tokens.Add(token);
         _db.SaveChanges();
 
         return Ok(token);
     }
+
 
     // GET: /api/token/mine
     [HttpGet("mine")]
@@ -57,6 +112,20 @@ public class TokenController : ControllerBase
 
         return Ok(token);
     }
+
+    [Authorize]
+    [HttpGet("sent")]
+    public IActionResult GetSentTokens()
+    {
+        var userId = GetCurrentUserId(); // Implement based on your auth
+        var sentTokens = _db.Tokens
+            .Where(t => t.IssuerUsername == userId)
+            .OrderByDescending(t => t.IssuedAt)
+            .ToList();
+
+        return Ok(sentTokens);
+    }
+
 
     [Authorize]
     [HttpPost("transfer")]
@@ -94,16 +163,25 @@ public class TokenController : ControllerBase
     [HttpGet("history")]
     public async Task<IActionResult> GetHistory([FromQuery] string username)
     {
-        // Ensure user is requesting their own history
-        var user = User.FindFirstValue(ClaimTypes.Name);
-        if (user != username)
-            return Forbid("Unauthorized access to history");
+        var currentUser = User.FindFirstValue(ClaimTypes.Name);
+        if (currentUser != username)
+            return Forbid();
 
         var tokens = await _db.Tokens
             .Where(t => t.IssuerUsername == username || t.RecipientUsername == username)
             .OrderByDescending(t => t.IssuedAt)
             .ToListAsync();
 
-        return Ok(tokens);
+        var history = tokens.Select(t => new TokenHistoryDto
+        {
+            Type = t.IssuerUsername == username ? "Sent" : "Received",
+            PartnerUsername = t.IssuerUsername == username ? t.RecipientUsername : t.IssuerUsername,
+            Amount = t.Amount,
+            Status = t.Status,
+            Remarks = t.Remarks,
+            IssuedAt = t.IssuedAt
+        });
+
+        return Ok(history);
     }
 }

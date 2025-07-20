@@ -22,32 +22,54 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public IActionResult Login([FromBody] LoginModel model)
     {
-        // Dummy check (replace with real DB lookup)
-        if (model.Username == "admin" && model.Password == "password")
+        // 🔍 Look up user by email instead of username
+        var user = _db.Users.FirstOrDefault(u => u.Email == model.Email);
+        if (user == null)
+            return Unauthorized("Invalid email or password.");
+
+        // ✅ Verify password
+        bool isValidPassword = BCrypt.Net.BCrypt.Verify(model.Password, user.PasswordHash);
+        if (!isValidPassword)
+            return Unauthorized("Invalid email or password.");
+
+        // 🔐 Generate JWT token
+        var claims = new[]
         {
-            var claims = new[]
-            {
-                new Claim(ClaimTypes.Name, model.Username)
-            };
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new Claim(ClaimTypes.Name, user.Username),
+            new Claim(ClaimTypes.Email, user.Email),
+            new Claim(ClaimTypes.Role, user.Role)
+        };
 
-            var keyString = _config["Jwt:Key"];
-            if (string.IsNullOrEmpty(keyString))
-                return StatusCode(500, "JWT key is not configured.");
-
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(keyString));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-            var token = new JwtSecurityToken(
-                issuer: _config["Jwt:Issuer"],
-                audience: null,
-                claims: claims,
-                expires: DateTime.Now.AddHours(2),
-                signingCredentials: creds);
-
-            return Ok(new { token = new JwtSecurityTokenHandler().WriteToken(token) });
+        foreach (var claim in claims)
+        {
+            Console.WriteLine($"[DEBUG] Claim Type: {claim.Type}, Value: {claim.Value}");
         }
 
-        return Unauthorized();
+        var keyString = _config["Jwt:Key"];
+        if (string.IsNullOrEmpty(keyString))
+            return StatusCode(500, "JWT key is not configured.");
+
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(keyString));
+        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+        var token = new JwtSecurityToken(
+            issuer: _config["Jwt:Issuer"],
+            audience: _config["Jwt:Audience"],
+            claims: claims,
+            expires: DateTime.UtcNow.AddDays(7),
+            signingCredentials: creds);
+
+        return Ok(new   
+        {
+            token = new JwtSecurityTokenHandler().WriteToken(token),
+            email = user.Email,
+            name = user.Name,
+            username = user.Username,
+            role = user.Role
+        });
     }
+
 
     [HttpPost("register")]
     public IActionResult Register([FromBody] RegisterModel model)
@@ -61,7 +83,9 @@ public class AuthController : ControllerBase
         {
             Username = model.Username,
             PasswordHash = passwordHash,
-            Role = "user"
+            Role = "user",
+            Name = model.Name,
+            Email = model.Email
         };
 
         _db.Users.Add(newUser);
@@ -70,7 +94,9 @@ public class AuthController : ControllerBase
         // Auto-login: generate token
         var claims = new[]
         {
+            new Claim(ClaimTypes.NameIdentifier, newUser.Id.ToString()),
             new Claim(ClaimTypes.Name, newUser.Username),
+            new Claim(ClaimTypes.Email, newUser.Email),
             new Claim(ClaimTypes.Role, newUser.Role)
         };
 

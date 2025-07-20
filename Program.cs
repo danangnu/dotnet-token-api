@@ -1,6 +1,9 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.EntityFrameworkCore; // ✅ Required for UseSqlite
+using dotnet_token_api;
+using System.Security.Claims; // ✅ Replace with your actual namespace if needed
 
 var builder = WebApplication.CreateBuilder(args);
 var key = builder.Configuration["Jwt:Key"];
@@ -8,21 +11,25 @@ var issuer = builder.Configuration["Jwt:Issuer"];
 
 if (string.IsNullOrWhiteSpace(key))
     throw new Exception("JWT Key is not configured. Please set Jwt:Key in appsettings.json.");
-    
+
 // CORS policy name
 var corsPolicy = "_allowReactApp";
 
-// Register CORS service
+// Register CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(name: corsPolicy,
         policy =>
         {
-            policy.WithOrigins("http://localhost:5173") // React dev server
+            policy.WithOrigins("http://localhost:3000")
                   .AllowAnyHeader()
                   .AllowAnyMethod();
         });
 });
+
+// ✅ Add EF Core DbContext with SQLite
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -43,9 +50,14 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Use CORS
-app.UseCors(corsPolicy);
+// Auto-migrate & seed (optional)
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate(); // optional: run db update at startup
+}
 
+app.UseCors(corsPolicy);
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
