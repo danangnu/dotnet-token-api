@@ -1,5 +1,6 @@
 public class TokenHistoryDto
 {
+    public int Id { get; set; } // Token ID
     public string? Type { get; set; }              // "Sent" or "Received"
     public string? PartnerUsername { get; set; }   // The other person
     public decimal Amount { get; set; }

@@ -20,19 +20,35 @@ public class TokenController : ControllerBase
     }
 
     [Authorize]
-    [HttpGet("accepted")]
-    public IActionResult GetAcceptedTokensForCurrentUser()
+     [HttpPost("{id}/accept")]
+    public async Task<IActionResult> AcceptToken(int id)
     {
-        var username = User.FindFirstValue(ClaimTypes.Name);
-        var tokens = _db.Tokens
-            .Where(t => t.RecipientUsername == username && t.Status == "accepted")
-            .Select(t => new {
-                t.Id,
-                t.RecipientUsername,
-                t.RecipientName,
-                t.Amount
-            })
-            .ToList();
+        var token = await _db.Tokens.FindAsync(id);
+        if (token == null) return NotFound();
+
+        token.Status = "accepted";
+        await _db.SaveChangesAsync();
+        return Ok(new { message = "Token accepted." });
+    }
+
+    [HttpPost("{id}/decline")]
+    public async Task<IActionResult> DeclineToken(int id)
+    {
+        var token = await _db.Tokens.FindAsync(id);
+        if (token == null) return NotFound();
+
+        token.Status = "declined";
+        await _db.SaveChangesAsync();
+        return Ok(new { message = "Token declined." });
+    }
+
+    // Optional: View pending tokens for a user
+    [HttpGet("incoming/{recipientId}")]
+    public async Task<IActionResult> GetIncomingTokens(int recipientId)
+    {
+        var tokens = await _db.Tokens
+            .Where(t => t.RecipientId == recipientId && t.Status == "pending")
+            .ToListAsync();
 
         return Ok(tokens);
     }
@@ -174,6 +190,7 @@ public class TokenController : ControllerBase
 
         var history = tokens.Select(t => new TokenHistoryDto
         {
+            Id = t.Id,
             Type = t.IssuerUsername == username ? "Sent" : "Received",
             PartnerUsername = t.IssuerUsername == username ? t.RecipientUsername : t.IssuerUsername,
             Amount = t.Amount,
