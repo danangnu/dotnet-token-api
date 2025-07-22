@@ -1,7 +1,8 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.EntityFrameworkCore; // ✅ Required for UseSqlite
+using Microsoft.EntityFrameworkCore;
+using dotnet_token_api.Services; // ✅ Required for UseSqlite
 
 var builder = WebApplication.CreateBuilder(args);
 var key = builder.Configuration["Jwt:Key"];
@@ -50,6 +51,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
+builder.Services.AddScoped<DebtCycleService>();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

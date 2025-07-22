@@ -1,5 +1,5 @@
+using dotnet_token_api.Models;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics;
 
 public class AppDbContext : DbContext
 {
@@ -8,6 +8,7 @@ public class AppDbContext : DbContext
 
     public DbSet<User> Users { get; set; } = null!;
     public DbSet<Token> Tokens { get; set; } = null!;
+    public DbSet<Debt> Debts { get; set; } = null!;
 
     public static void Seed(ModelBuilder modelBuilder)
     {
