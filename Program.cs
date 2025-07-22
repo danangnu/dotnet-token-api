@@ -21,7 +21,11 @@ builder.Services.AddCors(options =>
     options.AddPolicy(name: corsPolicy,
         policy =>
         {
-            policy.WithOrigins("http://localhost:3000")
+            policy.WithOrigins(
+                        "http://localhost:3000",
+                        "https://nattesc.vercel.app", 
+                        "https://nattesc.onrender.com"
+                    )
                   .AllowAnyHeader()
                   .AllowAnyMethod();
         });
@@ -57,9 +61,14 @@ using (var scope = app.Services.CreateScope())
     db.Database.Migrate(); // optional: run db update at startup
 }
 
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 app.UseCors(corsPolicy);
-app.UseHttpsRedirection();
+// app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-app.Run();
+app.Run("http://0.0.0.0:10000");
