@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -14,46 +15,52 @@ namespace dotnet_token_api.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "9.0.7");
+            modelBuilder
+                .HasAnnotation("ProductVersion", "8.0.13")
+                .HasAnnotation("Relational:MaxIdentifierLength", 64);
+
+            MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
 
             modelBuilder.Entity("Token", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<decimal>("Amount")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("decimal(65,30)");
 
                     b.Property<DateTime?>("ExpirationDate")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("datetime(6)");
 
                     b.Property<DateTime>("IssuedAt")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("datetime(6)");
 
                     b.Property<int>("IssuerId")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("int");
 
                     b.Property<string>("IssuerUsername")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("longtext");
 
                     b.Property<int>("RecipientId")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("int");
 
                     b.Property<string>("RecipientName")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("RecipientUsername")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("Remarks")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("longtext");
 
                     b.HasKey("Id");
 
@@ -64,8 +71,8 @@ namespace dotnet_token_api.Migrations
                         {
                             Id = 1,
                             Amount = 10m,
-                            ExpirationDate = new DateTime(2025, 7, 27, 13, 22, 53, 635, DateTimeKind.Utc).AddTicks(8248),
-                            IssuedAt = new DateTime(2025, 7, 20, 13, 22, 53, 635, DateTimeKind.Utc).AddTicks(8144),
+                            ExpirationDate = new DateTime(2025, 7, 29, 5, 19, 14, 144, DateTimeKind.Utc).AddTicks(9910),
+                            IssuedAt = new DateTime(2025, 7, 22, 5, 19, 14, 144, DateTimeKind.Utc).AddTicks(9909),
                             IssuerId = 2,
                             IssuerUsername = "alice",
                             RecipientId = 3,
@@ -80,22 +87,24 @@ namespace dotnet_token_api.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Email")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("Name")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("PasswordHash")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("Role")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("longtext");
 
                     b.Property<string>("Username")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("longtext");
 
                     b.HasKey("Id");
 
@@ -107,7 +116,7 @@ namespace dotnet_token_api.Migrations
                             Id = 1,
                             Email = "admin@example.com",
                             Name = "Administrator",
-                            PasswordHash = "$2a$11$hpBmz45nJ7LD14XfqzBQ2uIEIVEUYoHDwR3jTC4h9K9gCRhV7Wk9y",
+                            PasswordHash = "$2a$11$kz5HrCyCm5074gPvm4RLF.zXIQbgRmS08SIwp1ydQbJraKttRJeg2",
                             Role = "admin",
                             Username = "admin"
                         },
@@ -116,7 +125,7 @@ namespace dotnet_token_api.Migrations
                             Id = 2,
                             Email = "alice@example.com",
                             Name = "Alice Smith",
-                            PasswordHash = "$2a$11$4uveJRhnaCu3lqkIjT/uruH3lQWg4CNKb4cvjUEVEM1nVfduPf/JG",
+                            PasswordHash = "$2a$11$MNz8xemb7cLH14PowZgz2eURx30NkhXiV.ixANQC21s3qC8NVphAu",
                             Role = "user",
                             Username = "alice"
                         },
@@ -125,7 +134,7 @@ namespace dotnet_token_api.Migrations
                             Id = 3,
                             Email = "bob@example.com",
                             Name = "Bob Johnson",
-                            PasswordHash = "$2a$11$q7ingtuqvm8DtQ/hHqbzPeXp66nDNx4V4AlNuVyDGJNAIwnkB.Nf.",
+                            PasswordHash = "$2a$11$zReEwOoU8Wd5H3cxsbavm.RL8C7mlzdhns/NBvjmFTm43xwUhnj7i",
                             Role = "user",
                             Username = "bob"
                         });

@@ -60,13 +60,6 @@ public class AppDbContext : DbContext
             }
         );
     }
-    
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-        optionsBuilder
-            .UseSqlite("Data Source=app.db") // atau koneksi Anda
-            .ConfigureWarnings(warnings => warnings.Ignore(RelationalEventId.PendingModelChangesWarning));
-    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

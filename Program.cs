@@ -2,8 +2,6 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.EntityFrameworkCore; // ✅ Required for UseSqlite
-using dotnet_token_api;
-using System.Security.Claims; // ✅ Replace with your actual namespace if needed
 
 var builder = WebApplication.CreateBuilder(args);
 var key = builder.Configuration["Jwt:Key"];
