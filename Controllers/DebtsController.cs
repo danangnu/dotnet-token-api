@@ -143,4 +143,25 @@ public class DebtsController : ControllerBase
         return Ok(activities);
     }
 
+    [Authorize]
+    [HttpGet("all")]
+    public ActionResult<IEnumerable<DebtRecordDto>> GetAllDebts2()
+    {
+        var debts = (from d in _context.Debts
+                    join fromUser in _context.Users on d.FromUserId equals fromUser.Id
+                    join toUser in _context.Users on d.ToUserId equals toUser.Id
+                    select new DebtRecordDto
+                    {
+                        Id = d.Id,
+                        Debtor = fromUser.Name,
+                        Creditor = toUser.Name,
+                        Amount = d.Amount,
+                        Remarks = "", // Adjust if you add remarks column later
+                        IsSettled = d.IsSettled,
+                        CreatedAt = d.CreatedAt
+                    }).ToList();
+
+        return Ok(debts);
+    }
+
 }
