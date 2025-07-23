@@ -21,6 +21,35 @@ namespace dotnet_token_api.Migrations
 
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
 
+            modelBuilder.Entity("DebtActivity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("DebtId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PerformedBy")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DebtId");
+
+                    b.ToTable("DebtActivities");
+                });
+
             modelBuilder.Entity("Token", b =>
                 {
                     b.Property<int>("Id")
@@ -71,8 +100,8 @@ namespace dotnet_token_api.Migrations
                         {
                             Id = 1,
                             Amount = 10m,
-                            ExpirationDate = new DateTime(2025, 7, 30, 3, 7, 59, 802, DateTimeKind.Utc).AddTicks(470),
-                            IssuedAt = new DateTime(2025, 7, 23, 3, 7, 59, 802, DateTimeKind.Utc).AddTicks(470),
+                            ExpirationDate = new DateTime(2025, 7, 30, 6, 15, 3, 803, DateTimeKind.Utc).AddTicks(6437),
+                            IssuedAt = new DateTime(2025, 7, 23, 6, 15, 3, 803, DateTimeKind.Utc).AddTicks(6436),
                             IssuerId = 2,
                             IssuerUsername = "alice",
                             RecipientId = 3,
@@ -116,7 +145,7 @@ namespace dotnet_token_api.Migrations
                             Id = 1,
                             Email = "admin@example.com",
                             Name = "Administrator",
-                            PasswordHash = "$2a$11$glMoeqL9WBt99Scri69JGuNEBtqV6pfK.dT21LnSmn/lomIweJw8a",
+                            PasswordHash = "$2a$11$pHG2Zkdg0OnbWBZCPgMuGOwbTbm3e3WhMHVQN8k.HOxru4/55zah6",
                             Role = "admin",
                             Username = "admin"
                         },
@@ -125,7 +154,7 @@ namespace dotnet_token_api.Migrations
                             Id = 2,
                             Email = "alice@example.com",
                             Name = "Alice Smith",
-                            PasswordHash = "$2a$11$wOlW13eeR2RaJ1i77GwYW.YWCQZb7dqsCA2KaZOVV2NkX4Kc3yk9e",
+                            PasswordHash = "$2a$11$EMiKo.HJIt4ssKTHtcVUhOctvR9QE/RzkLZbnr/CNYgQPvqjIHZfG",
                             Role = "user",
                             Username = "alice"
                         },
@@ -134,7 +163,7 @@ namespace dotnet_token_api.Migrations
                             Id = 3,
                             Email = "bob@example.com",
                             Name = "Bob Johnson",
-                            PasswordHash = "$2a$11$Gedl95IBx9ZqEFl5z3tkRe5NtplE8B.u2wXeN/9DUn.NH66kG3lTm",
+                            PasswordHash = "$2a$11$v4vEFcSOKsnxltzfhXHY5.fiHAk99dxalLvN8Q4b6aQ7.VQbiSyuq",
                             Role = "user",
                             Username = "bob"
                         });
@@ -166,6 +195,17 @@ namespace dotnet_token_api.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Debts");
+                });
+
+            modelBuilder.Entity("DebtActivity", b =>
+                {
+                    b.HasOne("dotnet_token_api.Models.Debt", "Debt")
+                        .WithMany()
+                        .HasForeignKey("DebtId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Debt");
                 });
 #pragma warning restore 612, 618
         }

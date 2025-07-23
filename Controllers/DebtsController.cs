@@ -65,4 +65,82 @@ public class DebtsController : ControllerBase
 
         return Ok(grouped);
     }
+
+    [Authorize]
+    [HttpGet("summary")]
+    public ActionResult<DebtSummaryDto> GetSummary()
+    {
+        var totalDebt = _context.Debts.Sum(d => d.Amount);
+        var totalSettled = _context.Debts.Where(d => d.IsSettled).Sum(d => d.Amount);
+        var totalUnsettled = totalDebt - totalSettled;
+
+        // ✅ Replace problematic SelectMany
+        var fromUsers = _context.Debts
+            .Where(d => !d.IsSettled)
+            .Select(d => d.FromUserId);
+
+        var toUsers = _context.Debts
+            .Where(d => !d.IsSettled)
+            .Select(d => d.ToUserId);
+
+        var usersInDebt = fromUsers
+            .Union(toUsers)
+            .Distinct()
+            .Count();
+
+        var topDebtor = _context.Debts
+            .Where(d => !d.IsSettled)
+            .GroupBy(d => d.FromUserId)
+            .Select(g => new { UserId = g.Key, Total = g.Sum(x => x.Amount) })
+            .OrderByDescending(g => g.Total)
+            .FirstOrDefault();
+
+        var topCreditor = _context.Debts
+            .Where(d => !d.IsSettled)
+            .GroupBy(d => d.ToUserId)
+            .Select(g => new { UserId = g.Key, Total = g.Sum(x => x.Amount) })
+            .OrderByDescending(g => g.Total)
+            .FirstOrDefault();
+
+        var topDebtorName = topDebtor != null
+            ? _context.Users.FirstOrDefault(u => u.Id == topDebtor.UserId)?.Name ?? "N/A"
+            : "N/A";
+
+        var topCreditorName = topCreditor != null
+            ? _context.Users.FirstOrDefault(u => u.Id == topCreditor.UserId)?.Name ?? "N/A"
+            : "N/A";
+
+        return Ok(new DebtSummaryDto
+        {
+            TotalDebt = totalDebt,
+            TotalSettled = totalSettled,
+            TotalUnsettled = totalUnsettled,
+            ActiveUsersInDebt = usersInDebt,
+            TopDebtorName = topDebtorName,
+            TopCreditorName = topCreditorName
+        });
+    }
+
+    [Authorize]
+    [HttpGet("activity")]
+    public async Task<ActionResult<IEnumerable<DebtActivityDto>>> GetRecentActivities()
+    {
+        var activities = await _context.DebtActivities
+            .Include(a => a.Debt)
+            .OrderByDescending(a => a.Timestamp)
+            .Take(20)
+            .Select(a => new DebtActivityDto
+            {
+                Action = a.Action,
+                Timestamp = a.Timestamp,
+                PerformedBy = a.PerformedBy,
+                From = a.Debt != null ? a.Debt.FromUserId : default,
+                To = a.Debt != null ? a.Debt.ToUserId : default,
+                Amount = a.Debt != null ? a.Debt.Amount : default
+            })
+            .ToListAsync();
+
+        return Ok(activities);
+    }
+
 }

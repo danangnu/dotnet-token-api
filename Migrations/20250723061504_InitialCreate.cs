@@ -86,33 +86,66 @@ namespace dotnet_token_api.Migrations
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
 
+            migrationBuilder.CreateTable(
+                name: "DebtActivities",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    DebtId = table.Column<int>(type: "int", nullable: false),
+                    Action = table.Column<string>(type: "longtext", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    Timestamp = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    PerformedBy = table.Column<string>(type: "longtext", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_DebtActivities", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_DebtActivities_Debts_DebtId",
+                        column: x => x.DebtId,
+                        principalTable: "Debts",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                })
+                .Annotation("MySql:CharSet", "utf8mb4");
+
             migrationBuilder.InsertData(
                 table: "Tokens",
                 columns: new[] { "Id", "Amount", "ExpirationDate", "IssuedAt", "IssuerId", "IssuerUsername", "RecipientId", "RecipientName", "RecipientUsername", "Remarks", "Status" },
-                values: new object[] { 1, 10m, new DateTime(2025, 7, 30, 3, 7, 59, 802, DateTimeKind.Utc).AddTicks(470), new DateTime(2025, 7, 23, 3, 7, 59, 802, DateTimeKind.Utc).AddTicks(470), 2, "alice", 3, "Bob Johnson", "bob", "Test token", "pending" });
+                values: new object[] { 1, 10m, new DateTime(2025, 7, 30, 6, 15, 3, 803, DateTimeKind.Utc).AddTicks(6437), new DateTime(2025, 7, 23, 6, 15, 3, 803, DateTimeKind.Utc).AddTicks(6436), 2, "alice", 3, "Bob Johnson", "bob", "Test token", "pending" });
 
             migrationBuilder.InsertData(
                 table: "Users",
                 columns: new[] { "Id", "Email", "Name", "PasswordHash", "Role", "Username" },
                 values: new object[,]
                 {
-                    { 1, "admin@example.com", "Administrator", "$2a$11$glMoeqL9WBt99Scri69JGuNEBtqV6pfK.dT21LnSmn/lomIweJw8a", "admin", "admin" },
-                    { 2, "alice@example.com", "Alice Smith", "$2a$11$wOlW13eeR2RaJ1i77GwYW.YWCQZb7dqsCA2KaZOVV2NkX4Kc3yk9e", "user", "alice" },
-                    { 3, "bob@example.com", "Bob Johnson", "$2a$11$Gedl95IBx9ZqEFl5z3tkRe5NtplE8B.u2wXeN/9DUn.NH66kG3lTm", "user", "bob" }
+                    { 1, "admin@example.com", "Administrator", "$2a$11$pHG2Zkdg0OnbWBZCPgMuGOwbTbm3e3WhMHVQN8k.HOxru4/55zah6", "admin", "admin" },
+                    { 2, "alice@example.com", "Alice Smith", "$2a$11$EMiKo.HJIt4ssKTHtcVUhOctvR9QE/RzkLZbnr/CNYgQPvqjIHZfG", "user", "alice" },
+                    { 3, "bob@example.com", "Bob Johnson", "$2a$11$v4vEFcSOKsnxltzfhXHY5.fiHAk99dxalLvN8Q4b6aQ7.VQbiSyuq", "user", "bob" }
                 });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_DebtActivities_DebtId",
+                table: "DebtActivities",
+                column: "DebtId");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "Debts");
+                name: "DebtActivities");
 
             migrationBuilder.DropTable(
                 name: "Tokens");
 
             migrationBuilder.DropTable(
                 name: "Users");
+
+            migrationBuilder.DropTable(
+                name: "Debts");
         }
     }
 }

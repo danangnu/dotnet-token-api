@@ -9,6 +9,8 @@ public class AppDbContext : DbContext
     public DbSet<User> Users { get; set; } = null!;
     public DbSet<Token> Tokens { get; set; } = null!;
     public DbSet<Debt> Debts { get; set; } = null!;
+    public DbSet<DebtActivity> DebtActivities { get; set; } = null!;
+
 
     public static void Seed(ModelBuilder modelBuilder)
     {
