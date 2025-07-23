@@ -1,6 +1,8 @@
 using dotnet_token_api.Models;
 using dotnet_token_api.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -15,6 +17,7 @@ public class DebtsController : ControllerBase
         _debtCycleService = debtCycleService;
     }
 
+    [Authorize]
     [HttpGet]
     public IActionResult GetAllDebts()
     {
@@ -44,4 +47,22 @@ public class DebtsController : ControllerBase
         return Ok(updatedCycles);
     }
 
+    [Authorize]
+    [HttpGet("overview")]
+    public async Task<IActionResult> GetDebtOverview()
+    {
+        var grouped = await _context.Debts
+            .GroupBy(d => new { d.FromUserId, d.ToUserId })
+            .Select(g => new
+            {
+                FromUserId = g.Key.FromUserId,
+                ToUserId = g.Key.ToUserId,
+                TotalAmount = g.Sum(d => d.Amount),
+                IsFullySettled = g.All(d => d.IsSettled),
+                Count = g.Count()
+            })
+            .ToListAsync();
+
+        return Ok(grouped);
+    }
 }

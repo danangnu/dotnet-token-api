@@ -4,9 +4,16 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.EntityFrameworkCore;
 using dotnet_token_api.Services; // ✅ Required for UseSqlite
 
+var basePath = System.IO.Directory.GetCurrentDirectory();
+var configuration = new ConfigurationBuilder()
+	.SetBasePath(basePath) 
+	.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true).Build();
+var key = configuration["Jwt:Key"];
+var issuer = configuration["Jwt:Issuer"];
+Console.WriteLine($"[DEBUG] JWT Key: '{key}' (Length: {key.Length} chars)");
+Console.WriteLine($"[DEBUG] Byte Length: {Encoding.UTF8.GetBytes(key).Length} bytes");
+
 var builder = WebApplication.CreateBuilder(args);
-var key = builder.Configuration["Jwt:Key"];
-var issuer = builder.Configuration["Jwt:Issuer"];
 
 if (string.IsNullOrWhiteSpace(key))
     throw new Exception("JWT Key is not configured. Please set Jwt:Key in appsettings.json.");
@@ -63,6 +70,7 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate(); // optional: run db update at startup
+    AppDbContext.SeedDebts(db); 
 }
 
 if (app.Environment.IsDevelopment())

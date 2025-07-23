@@ -62,6 +62,46 @@ public class AppDbContext : DbContext
         );
     }
 
+    public static void SeedDebts(AppDbContext context)
+    {
+        if (!context.Debts.Any())
+        {
+            var users = context.Users.OrderBy(u => u.Id).Take(4).ToList();
+            if (users.Count < 4) return;
+
+            var debts = new List<Debt>
+            {
+                new Debt
+                {
+                    FromUserId = users[0].Id, // User A
+                    ToUserId = users[1].Id,   // → User B
+                    Amount = 100
+                },
+                new Debt
+                {
+                    FromUserId = users[1].Id, // B
+                    ToUserId = users[2].Id,   // → C
+                    Amount = 110
+                },
+                new Debt
+                {
+                    FromUserId = users[2].Id, // C
+                    ToUserId = users[3].Id,   // → D
+                    Amount = 120
+                },
+                new Debt
+                {
+                    FromUserId = users[3].Id, // D
+                    ToUserId = users[0].Id,   // → A (loop)
+                    Amount = 130
+                }
+            };
+
+            context.Debts.AddRange(debts);
+            context.SaveChanges();
+        }
+    }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

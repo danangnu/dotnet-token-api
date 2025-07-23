@@ -22,47 +22,14 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public IActionResult Login([FromBody] LoginModel model)
     {
-        // 🔍 Look up user by email instead of username
         var user = _db.Users.FirstOrDefault(u => u.Email == model.Email);
-        if (user == null)
+        if (user == null || !BCrypt.Net.BCrypt.Verify(model.Password, user.PasswordHash))
             return Unauthorized("Invalid email or password.");
 
-        // ✅ Verify password
-        bool isValidPassword = BCrypt.Net.BCrypt.Verify(model.Password, user.PasswordHash);
-        if (!isValidPassword)
-            return Unauthorized("Invalid email or password.");
-
-        // 🔐 Generate JWT token
-        var claims = new[]
+        var token = GenerateJwtToken(user);
+        return Ok(new
         {
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim(ClaimTypes.Name, user.Username),
-            new Claim(ClaimTypes.Email, user.Email),
-            new Claim(ClaimTypes.Role, user.Role)
-        };
-
-        foreach (var claim in claims)
-        {
-            Console.WriteLine($"[DEBUG] Claim Type: {claim.Type}, Value: {claim.Value}");
-        }
-
-        var keyString = _config["Jwt:Key"];
-        if (string.IsNullOrEmpty(keyString))
-            return StatusCode(500, "JWT key is not configured.");
-
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(keyString));
-        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-        var token = new JwtSecurityToken(
-            issuer: _config["Jwt:Issuer"],
-            audience: _config["Jwt:Audience"],
-            claims: claims,
-            expires: DateTime.UtcNow.AddDays(7),
-            signingCredentials: creds);
-
-        return Ok(new   
-        {
-            token = new JwtSecurityTokenHandler().WriteToken(token),
+            token,
             email = user.Email,
             name = user.Name,
             username = user.Username,
@@ -70,47 +37,26 @@ public class AuthController : ControllerBase
         });
     }
 
-
     [HttpPost("register")]
     public IActionResult Register([FromBody] RegisterModel model)
     {
         if (_db.Users.Any(u => u.Username == model.Username))
             return BadRequest("Username already taken");
 
-        var passwordHash = BCrypt.Net.BCrypt.HashPassword(model.Password);
-
         var newUser = new User
         {
             Username = model.Username,
-            PasswordHash = passwordHash,
-            Role = "user",
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(model.Password),
             Name = model.Name,
-            Email = model.Email
+            Email = model.Email,
+            Role = "user"
         };
 
         _db.Users.Add(newUser);
         _db.SaveChanges();
 
-        // Auto-login: generate token
-        var claims = new[]
-        {
-            new Claim(ClaimTypes.NameIdentifier, newUser.Id.ToString()),
-            new Claim(ClaimTypes.Name, newUser.Username),
-            new Claim(ClaimTypes.Email, newUser.Email),
-            new Claim(ClaimTypes.Role, newUser.Role)
-        };
-
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
-        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-        var token = new JwtSecurityToken(
-            issuer: _config["Jwt:Issuer"],
-            claims: claims,
-            expires: DateTime.Now.AddHours(2),
-            signingCredentials: creds);
-
-        var jwt = new JwtSecurityTokenHandler().WriteToken(token);
-
-        return Ok(new { token = jwt });
+        var token = GenerateJwtToken(newUser);
+        return Ok(new { token });
     }
 
     [HttpPost("google-login")]
@@ -118,54 +64,24 @@ public class AuthController : ControllerBase
     {
         try
         {
-            // 1. Verify token using Google API
             var payload = await GoogleJsonWebSignature.ValidateAsync(dto.IdToken);
+            var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == payload.Email);
 
-            var email = payload.Email;
-            var name = payload.Name;
-
-            if (string.IsNullOrWhiteSpace(email))
-                return BadRequest("Invalid Google account.");
-
-            // 2. Check if user exists, otherwise create
-            var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email);
             if (user == null)
             {
                 user = new User
                 {
-                    Email = email,
-                    Username = email.Split('@')[0], // generate username
-                    Name = name,
-                    Role = "User" // default
+                    Email = payload.Email,
+                    Username = payload.Email.Split('@')[0],
+                    Name = payload.Name,
+                    Role = "user"
                 };
                 _db.Users.Add(user);
                 await _db.SaveChangesAsync();
             }
 
-            // 3. Generate JWT for your app
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.UTF8.GetBytes(_config["Jwt:Key"]);
-
-            var claims = new[]
-            {
-                new Claim(ClaimTypes.Name, user.Username),
-                new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.Role, user.Role ?? "User")
-            };
-
-            var tokenDescriptor = new SecurityTokenDescriptor
-            {
-                Subject = new ClaimsIdentity(claims),
-                Expires = DateTime.UtcNow.AddDays(7),
-                SigningCredentials = new SigningCredentials(
-                    new SymmetricSecurityKey(key),
-                    SecurityAlgorithms.HmacSha256Signature)
-            };
-
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-            var jwt = tokenHandler.WriteToken(token);
-
-            return Ok(new { token = jwt });
+            var token = GenerateJwtToken(user);
+            return Ok(new { token });
         }
         catch (InvalidJwtException)
         {
@@ -183,56 +99,74 @@ public class AuthController : ControllerBase
         try
         {
             var handler = new JwtSecurityTokenHandler();
-
             if (!handler.CanReadToken(dto.IdentityToken))
                 return BadRequest("Invalid identity token");
 
             var jwt = handler.ReadJwtToken(dto.IdentityToken);
             var email = jwt.Claims.FirstOrDefault(c => c.Type == "email")?.Value;
-            var userId = jwt.Claims.FirstOrDefault(c => c.Type == "sub")?.Value;
+            var sub = jwt.Claims.FirstOrDefault(c => c.Type == "sub")?.Value;
 
-            if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(userId))
-                return BadRequest("Missing email or subject in token");
+            if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(sub))
+                return BadRequest("Missing required claims");
 
-            // Optional: verify the signature (see advanced section below)
-            // For most cases, you can skip if identityToken came directly from Apple
-
-            // Look up or create user
             var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email);
             if (user == null)
             {
                 user = new User
                 {
                     Email = email,
-                    Username = email.Split('@')[0], // simple username
+                    Username = email.Split('@')[0],
                     Name = "Apple User",
-                    Role = "User"
+                    Role = "user"
                 };
                 _db.Users.Add(user);
                 await _db.SaveChangesAsync();
             }
 
-            // Generate your JWT
-            var key = Encoding.UTF8.GetBytes(_config["Jwt:Key"]);
-            var claims = new[]
-            {
-                new Claim(ClaimTypes.Name, user.Username),
-                new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.Role, user.Role ?? "User")
-            };
-
-            var token = new JwtSecurityTokenHandler().CreateToken(new SecurityTokenDescriptor
-            {
-                Subject = new ClaimsIdentity(claims),
-                Expires = DateTime.UtcNow.AddDays(7),
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256)
-            });
-
-            return Ok(new { token = new JwtSecurityTokenHandler().WriteToken(token) });
+            var token = GenerateJwtToken(user);
+            return Ok(new { token });
         }
         catch (Exception ex)
         {
             return StatusCode(500, $"Apple login error: {ex.Message}");
         }
     }
+
+    // 🔐 Helper method
+    private string GenerateJwtToken(User user)
+    {
+        // Force reload from appsettings.json
+        var configuration = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+            .Build();
+
+        var keyString = configuration["Jwt:Key"];
+        var issuer = configuration["Jwt:Issuer"];
+        var audience = configuration["Jwt:Audience"]; // optional
+
+        if (string.IsNullOrEmpty(keyString) || keyString.Length < 32)
+            throw new Exception("JWT key in appsettings.json is invalid or too short");
+
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(keyString));
+        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+        var claims = new[]
+        {
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new Claim(ClaimTypes.Name, user.Username ?? string.Empty),
+            new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
+            new Claim(ClaimTypes.Role, user.Role ?? "user")
+        };
+
+        var token = new JwtSecurityToken(
+            issuer: issuer,
+            audience: audience,
+            claims: claims,
+            expires: DateTime.UtcNow.AddDays(7),
+            signingCredentials: creds);
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
 }

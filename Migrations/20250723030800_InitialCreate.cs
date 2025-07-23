@@ -18,6 +18,24 @@ namespace dotnet_token_api.Migrations
                 .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateTable(
+                name: "Debts",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                    FromUserId = table.Column<int>(type: "int", nullable: false),
+                    ToUserId = table.Column<int>(type: "int", nullable: false),
+                    Amount = table.Column<decimal>(type: "decimal(65,30)", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    IsSettled = table.Column<bool>(type: "tinyint(1)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Debts", x => x.Id);
+                })
+                .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.CreateTable(
                 name: "Tokens",
                 columns: table => new
                 {
@@ -71,22 +89,25 @@ namespace dotnet_token_api.Migrations
             migrationBuilder.InsertData(
                 table: "Tokens",
                 columns: new[] { "Id", "Amount", "ExpirationDate", "IssuedAt", "IssuerId", "IssuerUsername", "RecipientId", "RecipientName", "RecipientUsername", "Remarks", "Status" },
-                values: new object[] { 1, 10m, new DateTime(2025, 7, 29, 5, 19, 14, 144, DateTimeKind.Utc).AddTicks(9910), new DateTime(2025, 7, 22, 5, 19, 14, 144, DateTimeKind.Utc).AddTicks(9909), 2, "alice", 3, "Bob Johnson", "bob", "Test token", "pending" });
+                values: new object[] { 1, 10m, new DateTime(2025, 7, 30, 3, 7, 59, 802, DateTimeKind.Utc).AddTicks(470), new DateTime(2025, 7, 23, 3, 7, 59, 802, DateTimeKind.Utc).AddTicks(470), 2, "alice", 3, "Bob Johnson", "bob", "Test token", "pending" });
 
             migrationBuilder.InsertData(
                 table: "Users",
                 columns: new[] { "Id", "Email", "Name", "PasswordHash", "Role", "Username" },
                 values: new object[,]
                 {
-                    { 1, "admin@example.com", "Administrator", "$2a$11$kz5HrCyCm5074gPvm4RLF.zXIQbgRmS08SIwp1ydQbJraKttRJeg2", "admin", "admin" },
-                    { 2, "alice@example.com", "Alice Smith", "$2a$11$MNz8xemb7cLH14PowZgz2eURx30NkhXiV.ixANQC21s3qC8NVphAu", "user", "alice" },
-                    { 3, "bob@example.com", "Bob Johnson", "$2a$11$zReEwOoU8Wd5H3cxsbavm.RL8C7mlzdhns/NBvjmFTm43xwUhnj7i", "user", "bob" }
+                    { 1, "admin@example.com", "Administrator", "$2a$11$glMoeqL9WBt99Scri69JGuNEBtqV6pfK.dT21LnSmn/lomIweJw8a", "admin", "admin" },
+                    { 2, "alice@example.com", "Alice Smith", "$2a$11$wOlW13eeR2RaJ1i77GwYW.YWCQZb7dqsCA2KaZOVV2NkX4Kc3yk9e", "user", "alice" },
+                    { 3, "bob@example.com", "Bob Johnson", "$2a$11$Gedl95IBx9ZqEFl5z3tkRe5NtplE8B.u2wXeN/9DUn.NH66kG3lTm", "user", "bob" }
                 });
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "Debts");
+
             migrationBuilder.DropTable(
                 name: "Tokens");
 
