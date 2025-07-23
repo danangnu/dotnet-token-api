@@ -23,10 +23,10 @@ public class TokenController : ControllerBase
 
     [Authorize]
     [HttpGet("accepted")]
-    public IActionResult GetAcceptedTokensForCurrentUser()
+    public async Task<IActionResult> GetAcceptedTokensForCurrentUser()
     {
         var username = User.FindFirstValue(ClaimTypes.Name);
-        var tokens = _db.Tokens
+        var tokens = await _db.Tokens
             .Where(t => t.RecipientUsername == username && t.Status == "accepted")
             .Select(t => new {
                 t.Id,
@@ -34,13 +34,13 @@ public class TokenController : ControllerBase
                 t.RecipientName,
                 t.Amount
             })
-            .ToList();
+            .ToListAsync();
 
         return Ok(tokens);
     }
 
     [Authorize]
-     [HttpPost("{id}/accept")]
+    [HttpPost("{id}/accept")]
     public async Task<IActionResult> AcceptToken(int id)
     {
         var token = await _db.Tokens.FindAsync(id);
@@ -77,26 +77,23 @@ public class TokenController : ControllerBase
     // POST: /api/token/issue
     [Authorize]
     [HttpPost("issue")]
-    public IActionResult IssueToken([FromBody] IssueTokenDto dto)
+    public async Task<IActionResult> IssueToken([FromBody] IssueTokenDto dto)
     {
         if (dto.Amount <= 0)
             return BadRequest("Invalid amount.");
 
         var issuerUsername = User.FindFirstValue(ClaimTypes.Name);
-
         var issuerIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
         Console.WriteLine($"[DEBUG] Issuer ID: {issuerIdStr}");
 
         if (!int.TryParse(issuerIdStr, out var issuerId))
-        {
             return Unauthorized("Invalid user ID.");
-        }
 
         if (string.IsNullOrEmpty(issuerUsername) || string.IsNullOrEmpty(dto.Recipient))
             return BadRequest("Invalid issuer or recipient.");
 
-        // Optional: fetch recipient details from DB if needed (e.g., full name, ID)
-        var recipientUser = _db.Users.FirstOrDefault(u => u.Username == dto.Recipient);
+        var recipientUser = await _db.Users.FirstOrDefaultAsync(u => u.Username == dto.Recipient);
         if (recipientUser == null)
             return NotFound("Recipient user not found.");
 
@@ -114,54 +111,56 @@ public class TokenController : ControllerBase
             ExpirationDate = dto.ExpirationDate
         };
 
-        _db.Tokens.Add(token);
-        _db.SaveChanges();
+        await _db.Tokens.AddAsync(token);
+        await _db.SaveChangesAsync();
 
         return Ok(token);
     }
 
-
     // GET: /api/token/mine
+    [Authorize]
     [HttpGet("mine")]
-    public IActionResult GetMyTokens([FromQuery] string username)
+    public async Task<IActionResult> GetMyTokens([FromQuery] string username)
     {
-        var tokens = _db.Tokens
+        var tokens = await _db.Tokens
             .Where(t => t.RecipientUsername == username || t.IssuerUsername == username)
             .OrderByDescending(t => t.IssuedAt)
-            .ToList();
+            .ToListAsync();
 
         return Ok(tokens);
     }
 
     // POST: /api/token/respond
+    [Authorize]
     [HttpPost("respond")]
-    public IActionResult Respond([FromBody] Token response)
+    public async Task<IActionResult> Respond([FromBody] Token response)
     {
-        var token = _db.Tokens.Find(response.Id);
-        if (token == null) return NotFound();
+        var token = await _db.Tokens.FindAsync(response.Id);
+        if (token == null)
+            return NotFound();
 
         if (token.RecipientUsername != response.RecipientUsername)
             return Forbid();
 
         token.Status = response.Status;
-        _db.SaveChanges();
+        await _db.SaveChangesAsync();
 
         return Ok(token);
     }
 
     [Authorize]
     [HttpGet("sent")]
-    public IActionResult GetSentTokens()
+    public async Task<IActionResult> GetSentTokens()
     {
-        var userId = GetCurrentUserId(); // Implement based on your auth
-        var sentTokens = _db.Tokens
+        var userId = GetCurrentUserId(); // Ensure this returns the correct username
+
+        var sentTokens = await _db.Tokens
             .Where(t => t.IssuerUsername == userId)
             .OrderByDescending(t => t.IssuedAt)
-            .ToList();
+            .ToListAsync();
 
         return Ok(sentTokens);
     }
-
 
     [Authorize]
     [HttpPost("transfer")]

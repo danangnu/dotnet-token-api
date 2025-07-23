@@ -20,9 +20,9 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
-    public IActionResult Login([FromBody] LoginModel model)
+    public async Task<IActionResult> Login([FromBody] LoginModel model)
     {
-        var user = _db.Users.FirstOrDefault(u => u.Email == model.Email);
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == model.Email);
         if (user == null || !BCrypt.Net.BCrypt.Verify(model.Password, user.PasswordHash))
             return Unauthorized("Invalid email or password.");
 
@@ -38,9 +38,9 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("register")]
-    public IActionResult Register([FromBody] RegisterModel model)
+    public async Task<IActionResult> Register([FromBody] RegisterModel model)
     {
-        if (_db.Users.Any(u => u.Username == model.Username))
+        if (await _db.Users.AnyAsync(u => u.Username == model.Username))
             return BadRequest("Username already taken");
 
         var newUser = new User
@@ -52,8 +52,8 @@ public class AuthController : ControllerBase
             Role = "user"
         };
 
-        _db.Users.Add(newUser);
-        _db.SaveChanges();
+        await _db.Users.AddAsync(newUser);
+        await _db.SaveChangesAsync();
 
         var token = GenerateJwtToken(newUser);
         return Ok(new { token });
