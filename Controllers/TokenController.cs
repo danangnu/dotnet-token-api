@@ -19,6 +19,26 @@ public class TokenController : ControllerBase
         return User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
     }
 
+    
+
+    [Authorize]
+    [HttpGet("accepted")]
+    public IActionResult GetAcceptedTokensForCurrentUser()
+    {
+        var username = User.FindFirstValue(ClaimTypes.Name);
+        var tokens = _db.Tokens
+            .Where(t => t.RecipientUsername == username && t.Status == "accepted")
+            .Select(t => new {
+                t.Id,
+                t.RecipientUsername,
+                t.RecipientName,
+                t.Amount
+            })
+            .ToList();
+
+        return Ok(tokens);
+    }
+
     [Authorize]
      [HttpPost("{id}/accept")]
     public async Task<IActionResult> AcceptToken(int id)
