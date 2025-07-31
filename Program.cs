@@ -83,5 +83,4 @@ app.UseCors(corsPolicy);
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-// app.Run("http://0.0.0.0:10000");
-app.Run();
+app.Run("http://0.0.0.0:10000");
