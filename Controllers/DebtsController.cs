@@ -169,6 +169,39 @@ public class DebtsController : ControllerBase
         return Ok(debts);
     }
 
+    [HttpPost("{id}/settle")]
+    public async Task<IActionResult> SettleDebt(int id, [FromBody] DebtSettlementRequest request)
+    {
+        var debt = await _context.Debts.FindAsync(id);
+        if (debt == null)
+            return NotFound(new { message = "Debt not found" });
+
+        if (request.Amount <= 0)
+            return BadRequest(new { message = "Amount must be greater than zero" });
+
+        if (debt.IsSettled)
+            return BadRequest(new { message = "Debt is already settled" });
+
+        var remaining = debt.Amount - debt.PaidAmount;
+        var settleAmount = Math.Min(request.Amount, remaining);
+
+        debt.PaidAmount += settleAmount;
+
+        // Optional: log settlement record here
+        await _context.SaveChangesAsync();
+
+        return Ok(new
+        {
+            message = debt.IsSettled ? "Debt fully settled" : "Partial settlement successful",
+            debt.Id,
+            debt.FromUserId,
+            debt.ToUserId,
+            debt.Amount,
+            debt.PaidAmount,
+            IsSettled = debt.IsSettled
+        });
+    }
+
     [Authorize]
     [HttpPost("{id}/repay")]
     public async Task<IActionResult> RepayDebt(int id, [FromBody] RepaymentDto repayment)

@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace dotnet_token_api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250723061504_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20250731134811_DebtRecord")]
+    partial class DebtRecord
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -103,8 +103,8 @@ namespace dotnet_token_api.Migrations
                         {
                             Id = 1,
                             Amount = 10m,
-                            ExpirationDate = new DateTime(2025, 7, 30, 6, 15, 3, 803, DateTimeKind.Utc).AddTicks(6437),
-                            IssuedAt = new DateTime(2025, 7, 23, 6, 15, 3, 803, DateTimeKind.Utc).AddTicks(6436),
+                            ExpirationDate = new DateTime(2025, 8, 7, 13, 48, 10, 845, DateTimeKind.Utc).AddTicks(3894),
+                            IssuedAt = new DateTime(2025, 7, 31, 13, 48, 10, 845, DateTimeKind.Utc).AddTicks(3894),
                             IssuerId = 2,
                             IssuerUsername = "alice",
                             RecipientId = 3,
@@ -148,7 +148,7 @@ namespace dotnet_token_api.Migrations
                             Id = 1,
                             Email = "admin@example.com",
                             Name = "Administrator",
-                            PasswordHash = "$2a$11$pHG2Zkdg0OnbWBZCPgMuGOwbTbm3e3WhMHVQN8k.HOxru4/55zah6",
+                            PasswordHash = "$2a$11$7yioVIQ.eW8R/7HZn06FU.wQJqsfZfEMHbQYslJUMBIiY3VJoHKh2",
                             Role = "admin",
                             Username = "admin"
                         },
@@ -157,7 +157,7 @@ namespace dotnet_token_api.Migrations
                             Id = 2,
                             Email = "alice@example.com",
                             Name = "Alice Smith",
-                            PasswordHash = "$2a$11$EMiKo.HJIt4ssKTHtcVUhOctvR9QE/RzkLZbnr/CNYgQPvqjIHZfG",
+                            PasswordHash = "$2a$11$ueL.NE65fqih.TXOJsvDjeBVyJFAZ4HYJjytSzf13DZWNqqiPiWdW",
                             Role = "user",
                             Username = "alice"
                         },
@@ -166,7 +166,7 @@ namespace dotnet_token_api.Migrations
                             Id = 3,
                             Email = "bob@example.com",
                             Name = "Bob Johnson",
-                            PasswordHash = "$2a$11$v4vEFcSOKsnxltzfhXHY5.fiHAk99dxalLvN8Q4b6aQ7.VQbiSyuq",
+                            PasswordHash = "$2a$11$mwXBAFKyqdAFGtEXXd7.V.ZRr120l01XW5NGkIAYrMdm6wnbxJDGC",
                             Role = "user",
                             Username = "bob"
                         });
@@ -191,6 +191,9 @@ namespace dotnet_token_api.Migrations
 
                     b.Property<bool>("IsSettled")
                         .HasColumnType("tinyint(1)");
+
+                    b.Property<decimal>("PaidAmount")
+                        .HasColumnType("decimal(65,30)");
 
                     b.Property<int>("ToUserId")
                         .HasColumnType("int");

@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace dotnet_token_api.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class DebtRecord : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -26,6 +26,7 @@ namespace dotnet_token_api.Migrations
                     FromUserId = table.Column<int>(type: "int", nullable: false),
                     ToUserId = table.Column<int>(type: "int", nullable: false),
                     Amount = table.Column<decimal>(type: "decimal(65,30)", nullable: false),
+                    PaidAmount = table.Column<decimal>(type: "decimal(65,30)", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime(6)", nullable: false),
                     IsSettled = table.Column<bool>(type: "tinyint(1)", nullable: false)
                 },
@@ -114,16 +115,16 @@ namespace dotnet_token_api.Migrations
             migrationBuilder.InsertData(
                 table: "Tokens",
                 columns: new[] { "Id", "Amount", "ExpirationDate", "IssuedAt", "IssuerId", "IssuerUsername", "RecipientId", "RecipientName", "RecipientUsername", "Remarks", "Status" },
-                values: new object[] { 1, 10m, new DateTime(2025, 7, 30, 6, 15, 3, 803, DateTimeKind.Utc).AddTicks(6437), new DateTime(2025, 7, 23, 6, 15, 3, 803, DateTimeKind.Utc).AddTicks(6436), 2, "alice", 3, "Bob Johnson", "bob", "Test token", "pending" });
+                values: new object[] { 1, 10m, new DateTime(2025, 8, 7, 13, 48, 10, 845, DateTimeKind.Utc).AddTicks(3894), new DateTime(2025, 7, 31, 13, 48, 10, 845, DateTimeKind.Utc).AddTicks(3894), 2, "alice", 3, "Bob Johnson", "bob", "Test token", "pending" });
 
             migrationBuilder.InsertData(
                 table: "Users",
                 columns: new[] { "Id", "Email", "Name", "PasswordHash", "Role", "Username" },
                 values: new object[,]
                 {
-                    { 1, "admin@example.com", "Administrator", "$2a$11$pHG2Zkdg0OnbWBZCPgMuGOwbTbm3e3WhMHVQN8k.HOxru4/55zah6", "admin", "admin" },
-                    { 2, "alice@example.com", "Alice Smith", "$2a$11$EMiKo.HJIt4ssKTHtcVUhOctvR9QE/RzkLZbnr/CNYgQPvqjIHZfG", "user", "alice" },
-                    { 3, "bob@example.com", "Bob Johnson", "$2a$11$v4vEFcSOKsnxltzfhXHY5.fiHAk99dxalLvN8Q4b6aQ7.VQbiSyuq", "user", "bob" }
+                    { 1, "admin@example.com", "Administrator", "$2a$11$7yioVIQ.eW8R/7HZn06FU.wQJqsfZfEMHbQYslJUMBIiY3VJoHKh2", "admin", "admin" },
+                    { 2, "alice@example.com", "Alice Smith", "$2a$11$ueL.NE65fqih.TXOJsvDjeBVyJFAZ4HYJjytSzf13DZWNqqiPiWdW", "user", "alice" },
+                    { 3, "bob@example.com", "Bob Johnson", "$2a$11$mwXBAFKyqdAFGtEXXd7.V.ZRr120l01XW5NGkIAYrMdm6wnbxJDGC", "user", "bob" }
                 });
 
             migrationBuilder.CreateIndex(
