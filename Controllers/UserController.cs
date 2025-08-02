@@ -26,6 +26,26 @@ namespace dotnet_token_api.Controllers
             Ok($"Hello {User.Identity?.Name}, this is a protected endpoint.");
 
         [Authorize]
+        [HttpGet("search-users")]
+        public async Task<IActionResult> SearchUsers([FromQuery] string query)
+        {
+            if (string.IsNullOrWhiteSpace(query)) return BadRequest("Query is required.");
+
+            var users = await _context.Users
+                .Where(u => u.Email.Contains(query) || u.Username.Contains(query) || u.Name.Contains(query))
+                .Select(u => new
+                {
+                    u.Id,
+                    Display = $"{u.Name} ({u.Email})"
+                })
+                .Take(10)
+                .ToListAsync();
+
+            return Ok(users);
+        }
+
+
+        [Authorize]
         [HttpGet]
         public async Task<IActionResult> GetUsers(
             [FromQuery] int page = 1,

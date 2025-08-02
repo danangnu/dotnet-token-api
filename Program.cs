@@ -29,11 +29,12 @@ builder.Services.AddCors(options =>
         {
             policy.WithOrigins(
                         "http://localhost:3000",
-                        "https://nattesc.vercel.app", 
+                        "https://nattesc.vercel.app",
                         "https://nattesc.onrender.com"
                     )
                   .AllowAnyHeader()
-                  .AllowAnyMethod();
+                  .AllowAnyMethod()
+                  .AllowCredentials();
         });
 });
 
