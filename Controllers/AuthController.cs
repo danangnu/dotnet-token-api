@@ -12,11 +12,13 @@ public class AuthController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly IConfiguration _config;
+    private readonly IEmailService _emailService;
 
-    public AuthController(AppDbContext db, IConfiguration config)
+    public AuthController(AppDbContext db, IConfiguration config, IEmailService emailService)
     {
         _db = db;
         _config = config;
+        _emailService = emailService;
     }
 
     [HttpPost("login")]
@@ -38,25 +40,44 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("register")]
-    public async Task<IActionResult> Register([FromBody] RegisterModel model)
+    public async Task<IActionResult> Register(RegisterDto dto)
     {
-        if (await _db.Users.AnyAsync(u => u.Username == model.Username))
-            return BadRequest("Username already taken");
-
-        var newUser = new User
+        var user = new User
         {
-            Username = model.Username,
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword(model.Password),
-            Name = model.Name,
-            Email = model.Email,
-            Role = "user"
+            Username = dto.Username,
+            Email = dto.Email,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
+            Name = dto.Name,
+            Role = "User",
+            EmailVerificationToken = Guid.NewGuid().ToString(),
+            EmailTokenExpiry = DateTime.UtcNow.AddHours(24),
         };
 
-        await _db.Users.AddAsync(newUser);
+        _db.Users.Add(user);
         await _db.SaveChangesAsync();
 
-        var token = GenerateJwtToken(newUser);
-        return Ok(new { token });
+        // Send email
+        var verificationLink = $"{_config["AppSettings:FrontendUrl"]}/verify-email?token={user.EmailVerificationToken}";
+        await _emailService.SendVerificationEmailAsync(user.Email, $"Click here to verify: {verificationLink}");
+
+        return Ok(new { message = "Registration successful. Please check your email to verify." });
+    }
+
+    [HttpPost("verify-email")]
+    public async Task<IActionResult> VerifyEmail([FromQuery] string token)
+    {
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.EmailVerificationToken == token);
+
+        if (user == null || user.EmailTokenExpiry < DateTime.UtcNow)
+            return BadRequest("Invalid or expired token");
+
+        user.IsEmailVerified = true;
+        user.EmailVerificationToken = null;
+        user.EmailTokenExpiry = null;
+
+        await _db.SaveChangesAsync();
+
+        return Ok(new { message = "Email successfully verified." });
     }
 
     [HttpPost("google-login")]
