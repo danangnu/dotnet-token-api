@@ -14,11 +14,11 @@ public class EmailService : IEmailService
 
     public async Task SendPasswordResetEmailAsync(string toEmail, string resetLink)
     {
-        var fromEmail = _config["EmailSettings:From"];
-        var smtpHost = _config["EmailSettings:SmtpHost"];
-        var smtpPort = int.Parse(_config["EmailSettings:SmtpPort"]);
-        var smtpUser = _config["EmailSettings:SmtpUser"];
-        var smtpPass = _config["EmailSettings:SmtpPass"];
+        var smtpHost = _config["Smtp:Host"];
+        var smtpPort = int.Parse(_config["Smtp:Port"] ?? "587");
+        var smtpUser = _config["Smtp:Username"];
+        var smtpPass = _config["Smtp:Password"];
+        var fromEmail = _config["Smtp:FromEmail"] ?? smtpUser;
 
         using var message = new MailMessage(fromEmail, toEmail)
         {
