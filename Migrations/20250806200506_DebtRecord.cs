@@ -83,7 +83,10 @@ namespace dotnet_token_api.Migrations
                     IsEmailVerified = table.Column<bool>(type: "tinyint(1)", nullable: false),
                     EmailVerificationToken = table.Column<string>(type: "longtext", nullable: true)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    EmailTokenExpiry = table.Column<DateTime>(type: "datetime(6)", nullable: true)
+                    EmailTokenExpiry = table.Column<DateTime>(type: "datetime(6)", nullable: true),
+                    PasswordResetToken = table.Column<string>(type: "longtext", nullable: true)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    PasswordResetTokenExpiry = table.Column<DateTime>(type: "datetime(6)", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -119,16 +122,16 @@ namespace dotnet_token_api.Migrations
             migrationBuilder.InsertData(
                 table: "Tokens",
                 columns: new[] { "Id", "Amount", "ExpirationDate", "IssuedAt", "IssuerId", "IssuerUsername", "RecipientId", "RecipientName", "RecipientUsername", "Remarks", "Status" },
-                values: new object[] { 1, 10m, new DateTime(2025, 8, 9, 8, 51, 41, 100, DateTimeKind.Utc).AddTicks(9001), new DateTime(2025, 8, 2, 8, 51, 41, 100, DateTimeKind.Utc).AddTicks(9000), 2, "alice", 3, "Bob Johnson", "bob", "Test token", "pending" });
+                values: new object[] { 1, 10m, new DateTime(2025, 8, 13, 20, 5, 6, 613, DateTimeKind.Utc).AddTicks(4456), new DateTime(2025, 8, 6, 20, 5, 6, 613, DateTimeKind.Utc).AddTicks(4456), 2, "alice", 3, "Bob Johnson", "bob", "Test token", "pending" });
 
             migrationBuilder.InsertData(
                 table: "Users",
-                columns: new[] { "Id", "Email", "EmailTokenExpiry", "EmailVerificationToken", "IsEmailVerified", "Name", "PasswordHash", "Role", "Username" },
+                columns: new[] { "Id", "Email", "EmailTokenExpiry", "EmailVerificationToken", "IsEmailVerified", "Name", "PasswordHash", "PasswordResetToken", "PasswordResetTokenExpiry", "Role", "Username" },
                 values: new object[,]
                 {
-                    { 1, "admin@example.com", null, null, false, "Administrator", "$2a$11$oYZWWaNuLIzVJFPu7hFHx.FiFgeoTCOvLbuDIzOQUAiS/G9.Emg5S", "admin", "admin" },
-                    { 2, "alice@example.com", null, null, false, "Alice Smith", "$2a$11$9P9MVp8eKr1Y0K6JbXKdA.aEK0MV1lmvsDTOKfiySJaQ9iEYhUSIW", "user", "alice" },
-                    { 3, "bob@example.com", null, null, false, "Bob Johnson", "$2a$11$s/LofZe8iUWe/m.87C/PeuV442VWy7vWcCYTmb.pHtif4Fmv8szhq", "user", "bob" }
+                    { 1, "admin@example.com", null, null, false, "Administrator", "$2a$11$XsZr4GMvkNNFa0JXLxB5LexfSGVvlkaM7X4o2Df0Atbz8EaaKfhXK", null, null, "admin", "admin" },
+                    { 2, "alice@example.com", null, null, false, "Alice Smith", "$2a$11$p.SZkLb6F/pUTKmdKAz6JOV7vOHg1ZRanCrmxFO3dq9l/IgblpRym", null, null, "user", "alice" },
+                    { 3, "bob@example.com", null, null, false, "Bob Johnson", "$2a$11$oyGFrec31WJmEeByqBpqz.32kziHqFNJ6T/EXyH5PnrxJUReEiu0K", null, null, "user", "bob" }
                 });
 
             migrationBuilder.CreateIndex(

@@ -80,6 +80,41 @@ public class AuthController : ControllerBase
         return Ok(new { message = "Email successfully verified." });
     }
 
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest dto)
+    {
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
+        if (user == null) return Ok(); // Don't reveal existence
+
+        var token = Guid.NewGuid(   ).ToString();
+        user.PasswordResetToken = token;
+        user.PasswordResetTokenExpiry = DateTime.UtcNow.AddHours(1);
+        await _db.SaveChangesAsync();
+
+        var resetLink = $"{_config["FrontendUrl"]}/reset-password?token={token}";
+        await _emailService.SendPasswordResetEmailAsync(user.Email, resetLink);
+
+        return Ok();
+    }
+
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+    {
+        if (request.NewPassword != request.ConfirmPassword)
+            return BadRequest("Passwords do not match");
+
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.PasswordResetToken == request.Token && u.PasswordResetTokenExpiry > DateTime.UtcNow);
+        if (user == null)
+            return BadRequest("Invalid or expired token");
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+        user.PasswordResetToken = null;
+        user.PasswordResetTokenExpiry = null;
+        await _db.SaveChangesAsync();
+
+        return Ok("Password has been reset");
+    }
+
     [HttpPost("google-login")]
     public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginDto dto)
     {
