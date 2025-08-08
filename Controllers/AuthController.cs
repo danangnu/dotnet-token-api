@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json;
 using Google.Apis.Auth;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -120,9 +121,52 @@ public class AuthController : ControllerBase
     {
         try
         {
-            var payload = await GoogleJsonWebSignature.ValidateAsync(dto.IdToken);
-            var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == payload.Email);
+            var httpClient = new HttpClient();
 
+            var googleConfig = _config.GetSection("Authentication:Google");
+            var clientId = googleConfig["ClientId"];
+            var clientSecret = googleConfig["ClientSecret"];
+            var redirectUri = googleConfig["RedirectUri"];
+
+            var tokenRequestData = new Dictionary<string, string>
+            {
+                { "code", dto.Code },
+                { "client_id", clientId },
+                { "client_secret", clientSecret },
+                { "redirect_uri", redirectUri },
+                { "grant_type", "authorization_code" }
+            };
+
+            var tokenResponse = await httpClient.PostAsync(
+                "https://oauth2.googleapis.com/token",
+                new FormUrlEncodedContent(tokenRequestData)
+            );
+
+            if (!tokenResponse.IsSuccessStatusCode)
+            {
+                return Unauthorized("Token exchange failed.");
+            }
+
+            var tokenContent = await tokenResponse.Content.ReadAsStringAsync();
+            var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
+
+            var tokenResult = JsonSerializer.Deserialize<GoogleTokenResponse>(tokenContent, options);
+
+            var idToken = tokenResult?.IdToken;
+
+            if (string.IsNullOrWhiteSpace(idToken))
+            {
+                return StatusCode(500, "Missing id_token from Google.");
+            }
+
+            // Step 2: Validate the id_token
+            var payload = await GoogleJsonWebSignature.ValidateAsync(idToken);
+
+            // Step 3: Check or create user
+            var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == payload.Email);
             if (user == null)
             {
                 user = new User
@@ -136,18 +180,28 @@ public class AuthController : ControllerBase
                 await _db.SaveChangesAsync();
             }
 
+            // Step 4: Generate your own JWT
             var token = GenerateJwtToken(user);
-            return Ok(new { token });
+
+            return Ok(new
+            {
+                token,
+                email = user.Email,
+                name = user.Name,
+                username = user.Username,
+                role = user.Role
+            });
         }
         catch (InvalidJwtException)
         {
-            return Unauthorized("Invalid Google token");
+            return Unauthorized("Invalid ID token");
         }
         catch (Exception ex)
         {
             return StatusCode(500, $"Server error: {ex.Message}");
         }
     }
+
 
     [HttpPost("apple-login")]
     public async Task<IActionResult> AppleLogin([FromBody] AppleLoginDto dto)
