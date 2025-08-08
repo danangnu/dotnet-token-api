@@ -123,10 +123,9 @@ public class AuthController : ControllerBase
         {
             var httpClient = new HttpClient();
 
-            var googleConfig = _config.GetSection("Authentication:Google");
-            var clientId = googleConfig["ClientId"];
-            var clientSecret = googleConfig["ClientSecret"];
-            var redirectUri = googleConfig["RedirectUri"];
+            var clientId = _config["Google:ClientId"];
+            var clientSecret = _config["Google:ClientSecret"];
+            var redirectUri = _config["Google:RedirectUri"];
 
             var tokenRequestData = new Dictionary<string, string>
             {
