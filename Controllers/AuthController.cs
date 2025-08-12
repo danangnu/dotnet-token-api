@@ -61,7 +61,8 @@ public class AuthController : ControllerBase
         var verificationLink = $"{_config["AppSettings:FrontendUrl"]}/verify-email?token={user.EmailVerificationToken}";
         await _emailService.SendVerificationEmailAsync(user.Email, $"Click here to verify: {verificationLink}");
 
-        return Ok(new { message = "Registration successful. Please check your email to verify." });
+        var token = GenerateJwtToken(user);
+        return Ok(new { token });
     }
 
     [HttpPost("verify-email")]

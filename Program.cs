@@ -33,7 +33,8 @@ builder.Services.AddCors(options =>
                         "https://nattesc.onrender.com"
                     )
                   .AllowAnyHeader()
-                  .AllowAnyMethod();
+                  .AllowAnyMethod()
+                  .AllowCredentials();
         });
 });
 
