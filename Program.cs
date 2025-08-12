@@ -67,12 +67,18 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
+app.Use(async (context, next) =>
+{
+    Console.WriteLine($"Origin: {context.Request.Headers["Origin"]}");
+    await next();
+});
+
 // Auto-migrate & seed (optional)
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate(); // optional: run db update at startup
-    AppDbContext.SeedDebts(db); 
+    AppDbContext.SeedDebts(db);
 }
 
 if (app.Environment.IsDevelopment())
@@ -85,4 +91,5 @@ app.UseCors(corsPolicy);
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-app.Run("http://0.0.0.0:10000");
+// app.Run("http://0.0.0.0:10000");
+app.Run();
