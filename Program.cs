@@ -33,8 +33,7 @@ builder.Services.AddCors(options =>
                         "https://nattesc.onrender.com"
                     )
                   .AllowAnyHeader()
-                  .AllowAnyMethod()
-                  .AllowCredentials();
+                  .AllowAnyMethod();
         });
 });
 
@@ -91,5 +90,4 @@ app.UseCors(corsPolicy);
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-// app.Run("http://0.0.0.0:10000");
-app.Run();
+app.Run("http://0.0.0.0:10000");
