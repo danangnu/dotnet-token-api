@@ -36,7 +36,9 @@ namespace dotnet_token_api.Controllers
                 .Select(u => new
                 {
                     u.Id,
-                    Display = $"{u.Name} ({u.Email})"
+                    u.Username,
+                    u.Name,
+                    u.Email
                 })
                 .Take(10)
                 .ToListAsync();
