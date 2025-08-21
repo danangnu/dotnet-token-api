@@ -14,67 +14,139 @@ public class TokenController : ControllerBase
         _db = db;
     }
 
-    private string? GetCurrentUserId()
+    // Helpers
+    private string? GetCurrentUsername() =>
+        User.FindFirstValue(ClaimTypes.Name); // you’re already using this for username elsewhere
+
+    private int? GetCurrentUserId()
     {
-        return User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var idStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        return int.TryParse(idStr, out var id) ? id : (int?)null;
     }
 
-    
+    private bool IsAdmin() =>
+        User.IsInRole("Admin"); // requires Role claim in your JWT
 
-    [Authorize]
-    [HttpGet("accepted")]
-    public async Task<IActionResult> GetAcceptedTokensForCurrentUser()
+    // ------------------------------------------------------------------------------------
+    // Admin-only: view ALL tokens (any status, any user)
+    // ------------------------------------------------------------------------------------
+    [Authorize(Roles = "Admin")]
+    [HttpGet("all")]
+    public async Task<IActionResult> GetAllTokens()
     {
-        var username = User.FindFirstValue(ClaimTypes.Name);
         var tokens = await _db.Tokens
-            .Where(t => t.RecipientUsername == username && t.Status == "accepted")
-            .Select(t => new {
-                t.Id,
-                t.RecipientUsername,
-                t.RecipientName,
-                t.Amount
-            })
+            .OrderByDescending(t => t.IssuedAt)
             .ToListAsync();
 
         return Ok(tokens);
     }
 
-    [Authorize]
-    [HttpPost("{id}/accept")]
-    public async Task<IActionResult> AcceptToken(int id)
-    {
-        var token = await _db.Tokens.FindAsync(id);
-        if (token == null) return NotFound();
-
-        token.Status = "accepted";
-        await _db.SaveChangesAsync();
-        return Ok(new { message = "Token accepted." });
-    }
-
-    [HttpPost("{id}/decline")]
-    public async Task<IActionResult> DeclineToken(int id)
-    {
-        var token = await _db.Tokens.FindAsync(id);
-        if (token == null) return NotFound();
-
-        token.Status = "declined";
-        await _db.SaveChangesAsync();
-        return Ok(new { message = "Token declined." });
-    }
-
-    // Optional: View pending tokens for a user
-    [HttpGet("incoming/{recipientId}")]
+    // ------------------------------------------------------------------------------------
+    // Admin-only: view incoming tokens for a specific user by id (kept your endpoint)
+    // ------------------------------------------------------------------------------------
+    [Authorize(Roles = "Admin")]
+    [HttpGet("incoming/{recipientId:int}")]
     public async Task<IActionResult> GetIncomingTokens(int recipientId)
     {
         var tokens = await _db.Tokens
             .Where(t => t.RecipientId == recipientId && t.Status == "pending")
+            .OrderByDescending(t => t.IssuedAt)
             .ToListAsync();
 
         return Ok(tokens);
     }
 
+    // ------------------------------------------------------------------------------------
+    // Current user: tokens I sent
+    // ------------------------------------------------------------------------------------
+    [Authorize]
+    [HttpGet("sent")]
+    public async Task<IActionResult> GetSentTokens()
+    {
+        var currentUsername = GetCurrentUsername();
+        if (string.IsNullOrWhiteSpace(currentUsername))
+            return Unauthorized();
 
-    // POST: /api/token/issue
+        var sentTokens = await _db.Tokens
+            .Where(t => t.IssuerUsername == currentUsername)
+            .OrderByDescending(t => t.IssuedAt)
+            .ToListAsync();
+
+        return Ok(sentTokens);
+    }
+
+    // ------------------------------------------------------------------------------------
+    // Current user: tokens I received and accepted
+    // ------------------------------------------------------------------------------------
+    [Authorize]
+    [HttpGet("accepted")]
+    public async Task<IActionResult> GetAcceptedTokensForCurrentUser()
+    {
+        var currentUsername = GetCurrentUsername();
+        if (string.IsNullOrWhiteSpace(currentUsername))
+            return Unauthorized();
+
+        var tokens = await _db.Tokens
+            .Where(t => t.RecipientUsername == currentUsername && t.Status == "accepted")
+            .Select(t => new
+            {
+                t.Id,
+                t.RecipientUsername,
+                t.RecipientName,
+                t.Amount,
+                t.IssuedAt
+            })
+            .OrderByDescending(t => t.IssuedAt)
+            .ToListAsync();
+
+        return Ok(tokens);
+    }
+
+    // ------------------------------------------------------------------------------------
+    // Current user: unified “my history” (no need to pass ?username=)
+    // Admins may optionally pass ?username= to view someone else’s history
+    // ------------------------------------------------------------------------------------
+    [Authorize]
+    [HttpGet("history")]
+    public async Task<IActionResult> GetHistory([FromQuery] string? username = null)
+    {
+        string targetUsername;
+
+        if (!string.IsNullOrWhiteSpace(username))
+        {
+            if (!IsAdmin())
+                return Forbid("Only admins can query other users’ history.");
+            targetUsername = username;
+        }
+        else
+        {
+            targetUsername = GetCurrentUsername() ?? string.Empty;
+            if (string.IsNullOrEmpty(targetUsername))
+                return Unauthorized();
+        }
+
+        var tokens = await _db.Tokens
+            .Where(t => t.IssuerUsername == targetUsername || t.RecipientUsername == targetUsername)
+            .OrderByDescending(t => t.IssuedAt)
+            .ToListAsync();
+
+        var history = tokens.Select(t => new TokenHistoryDto
+        {
+            Id = t.Id,
+            Type = t.IssuerUsername == targetUsername ? "Sent" : "Received",
+            PartnerUsername = t.IssuerUsername == targetUsername ? t.RecipientUsername : t.IssuerUsername,
+            Amount = t.Amount,
+            Status = t.Status,
+            Remarks = t.Remarks,
+            IssuedAt = t.IssuedAt
+        });
+
+        return Ok(history);
+    }
+
+    // ------------------------------------------------------------------------------------
+    // Issue token (current user is the issuer)
+    // ------------------------------------------------------------------------------------
     [Authorize]
     [HttpPost("issue")]
     public async Task<IActionResult> IssueToken([FromBody] IssueTokenDto dto)
@@ -82,16 +154,14 @@ public class TokenController : ControllerBase
         if (dto.Amount <= 0)
             return BadRequest("Invalid amount.");
 
-        var issuerUsername = User.FindFirstValue(ClaimTypes.Name);
-        var issuerIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var issuerUsername = GetCurrentUsername();
+        var issuerId = GetCurrentUserId();
 
-        Console.WriteLine($"[DEBUG] Issuer ID: {issuerIdStr}");
+        if (issuerId is null || string.IsNullOrWhiteSpace(issuerUsername))
+            return Unauthorized("Invalid issuer.");
 
-        if (!int.TryParse(issuerIdStr, out var issuerId))
-            return Unauthorized("Invalid user ID.");
-
-        if (string.IsNullOrEmpty(issuerUsername) || string.IsNullOrEmpty(dto.Recipient))
-            return BadRequest("Invalid issuer or recipient.");
+        if (string.IsNullOrWhiteSpace(dto.Recipient))
+            return BadRequest("Recipient is required.");
 
         var recipientUser = await _db.Users.FirstOrDefaultAsync(u => u.Username == dto.Recipient);
         if (recipientUser == null)
@@ -100,8 +170,8 @@ public class TokenController : ControllerBase
         var token = new Token
         {
             IssuerUsername = issuerUsername,
-            IssuerId = issuerId,
-            RecipientUsername = dto.Recipient,
+            IssuerId = issuerId.Value,
+            RecipientUsername = recipientUser.Username!,
             RecipientId = recipientUser.Id,
             RecipientName = recipientUser.Name,
             Amount = dto.Amount,
@@ -117,107 +187,96 @@ public class TokenController : ControllerBase
         return Ok(token);
     }
 
-    // GET: /api/token/mine
+    // ------------------------------------------------------------------------------------
+    // Recipient actions: accept / decline
+    // ------------------------------------------------------------------------------------
     [Authorize]
-    [HttpGet("mine")]
-    public async Task<IActionResult> GetMyTokens([FromQuery] string username)
+    [HttpPost("{id:int}/accept")]
+    public async Task<IActionResult> AcceptToken(int id)
     {
-        var tokens = await _db.Tokens
-            .Where(t => t.RecipientUsername == username || t.IssuerUsername == username)
-            .OrderByDescending(t => t.IssuedAt)
-            .ToListAsync();
+        var currentUsername = GetCurrentUsername();
+        if (string.IsNullOrWhiteSpace(currentUsername))
+            return Unauthorized();
 
-        return Ok(tokens);
-    }
+        var token = await _db.Tokens.FindAsync(id);
+        if (token == null) return NotFound();
 
-    // POST: /api/token/respond
-    [Authorize]
-    [HttpPost("respond")]
-    public async Task<IActionResult> Respond([FromBody] Token response)
-    {
-        var token = await _db.Tokens.FindAsync(response.Id);
-        if (token == null)
-            return NotFound();
+        if (!string.Equals(token.RecipientUsername, currentUsername, StringComparison.OrdinalIgnoreCase))
+            return Forbid("You are not the intended recipient.");
 
-        if (token.RecipientUsername != response.RecipientUsername)
-            return Forbid();
+        if (token.Status != "pending")
+            return BadRequest("Only pending tokens can be accepted.");
 
-        token.Status = response.Status;
+        token.Status = "accepted";
         await _db.SaveChangesAsync();
 
-        return Ok(token);
+        return Ok(new { message = "Token accepted." });
     }
 
     [Authorize]
-    [HttpGet("sent")]
-    public async Task<IActionResult> GetSentTokens()
+    [HttpPost("{id:int}/decline")]
+    public async Task<IActionResult> DeclineToken(int id)
     {
-        var userId = GetCurrentUserId(); // Ensure this returns the correct username
+        var currentUsername = GetCurrentUsername();
+        if (string.IsNullOrWhiteSpace(currentUsername))
+            return Unauthorized();
 
-        var sentTokens = await _db.Tokens
-            .Where(t => t.IssuerUsername == userId)
-            .OrderByDescending(t => t.IssuedAt)
-            .ToListAsync();
+        var token = await _db.Tokens.FindAsync(id);
+        if (token == null) return NotFound();
 
-        return Ok(sentTokens);
+        if (!string.Equals(token.RecipientUsername, currentUsername, StringComparison.OrdinalIgnoreCase))
+            return Forbid("You are not the intended recipient.");
+
+        if (token.Status != "pending")
+            return BadRequest("Only pending tokens can be declined.");
+
+        token.Status = "declined";
+        await _db.SaveChangesAsync();
+
+        return Ok(new { message = "Token declined." });
     }
 
+    // ------------------------------------------------------------------------------------
+    // Transfer an accepted token you own (you must be the current Recipient)
+    // ------------------------------------------------------------------------------------
     [Authorize]
     [HttpPost("transfer")]
     public async Task<IActionResult> TransferToken([FromBody] TransferTokenDto dto)
     {
+        var currentUsername = GetCurrentUsername();
+        if (string.IsNullOrWhiteSpace(currentUsername))
+            return Unauthorized();
+
         var token = await _db.Tokens.FindAsync(dto.TokenId);
         if (token == null) return NotFound("Token not found.");
 
         if (token.Status != "accepted")
             return BadRequest("Only accepted tokens can be transferred.");
 
-        // Optional: validate that current user owns the token
-        var username = User.FindFirstValue(ClaimTypes.Name);
-        if (token.RecipientUsername != username)
+        if (!string.Equals(token.RecipientUsername, currentUsername, StringComparison.OrdinalIgnoreCase))
             return Forbid("You are not the owner of this token.");
 
-        // Create a new token for the new recipient
+        var newRecipient = await _db.Users.FirstOrDefaultAsync(u => u.Username == dto.NewRecipientUsername);
+        if (newRecipient == null)
+            return NotFound("New recipient user not found.");
+
+        // Option A: create a new pending token for the next recipient (leave original as historical)
         var newToken = new Token
         {
-            IssuerUsername = username!,
-            RecipientUsername = dto.NewRecipientUsername,
+            IssuerUsername = currentUsername,
+            IssuerId = token.RecipientId, // issuer is the current owner in this transfer model
+            RecipientUsername = newRecipient.Username!,
+            RecipientId = newRecipient.Id,
+            RecipientName = newRecipient.Name,
             Amount = token.Amount,
+            Remarks = dto.Remarks,
             Status = "pending",
-            IssuedAt = DateTime.UtcNow,
-            Remarks = dto.Remarks
+            IssuedAt = DateTime.UtcNow
         };
 
         await _db.Tokens.AddAsync(newToken);
         await _db.SaveChangesAsync();
 
         return Ok(new { message = "Token transferred." });
-    }
-
-    [Authorize]
-    [HttpGet("history")]
-    public async Task<IActionResult> GetHistory([FromQuery] string username)
-    {
-        var currentUser = User.FindFirstValue(ClaimTypes.Name);
-        if (currentUser != username)
-            return Forbid();
-
-        var tokens = await _db.Tokens
-            .Where(t => t.IssuerUsername == username || t.RecipientUsername == username)
-            .OrderByDescending(t => t.IssuedAt)
-            .ToListAsync();
-
-        var history = tokens.Select(t => new TokenHistoryDto
-        {
-            Id = t.Id,
-            Type = t.IssuerUsername == username ? "Sent" : "Received",
-            PartnerUsername = t.IssuerUsername == username ? t.RecipientUsername : t.IssuerUsername,
-            Amount = t.Amount,
-            Status = t.Status,
-            Remarks = t.Remarks,
-            IssuedAt = t.IssuedAt
-        });
-
-        return Ok(history);
     }
 }

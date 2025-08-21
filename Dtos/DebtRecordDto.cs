@@ -7,4 +7,5 @@ public class DebtRecordDto
     public string? Remarks { get; set; }
     public bool IsSettled { get; set; }
     public DateTime CreatedAt { get; set; }
+    public decimal PaidAmount { get; set; }
 }
