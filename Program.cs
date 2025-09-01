@@ -2,7 +2,8 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.EntityFrameworkCore;
-using dotnet_token_api.Services; // ✅ Required for UseSqlite
+using dotnet_token_api.Services;
+using System.Security.Claims; // ✅ Required for UseSqlite
 
 var basePath = System.IO.Directory.GetCurrentDirectory();
 var configuration = new ConfigurationBuilder()
@@ -55,9 +56,21 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = false,
             ValidateIssuerSigningKey = true,
             ValidIssuer = issuer,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key))
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key)),
+
+            // 👇 make sure ASP.NET uses the same role claim type you put in the token
+            RoleClaimType = ClaimTypes.Role,
+            NameClaimType = ClaimTypes.NameIdentifier
         };
     });
+
+// Optional but nice: policies
+builder.Services.AddAuthorization(opts =>
+{
+    opts.AddPolicy("AdminOnly", p => p.RequireRole("Admin"));
+    opts.AddPolicy("ManagerOrAdmin", p => p.RequireRole("Manager", "Admin"));
+});
+
 
 builder.Services.AddScoped<DebtCycleService>();
 builder.Services.AddScoped<IEmailService, EmailService>();

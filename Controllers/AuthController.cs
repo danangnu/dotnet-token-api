@@ -174,7 +174,7 @@ public class AuthController : ControllerBase
                     Email = payload.Email,
                     Username = payload.Email.Split('@')[0],
                     Name = payload.Name,
-                    Role = "user"
+                    Role = "User"
                 };
                 _db.Users.Add(user);
                 await _db.SaveChangesAsync();
@@ -266,7 +266,7 @@ public class AuthController : ControllerBase
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new Claim(ClaimTypes.Name, user.Username ?? string.Empty),
             new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
-            new Claim(ClaimTypes.Role, user.Role ?? "user")
+            new Claim(ClaimTypes.Role, user.Role ?? "User")
         };
 
         var token = new JwtSecurityToken(
