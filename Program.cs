@@ -90,8 +90,11 @@ app.Use(async (context, next) =>
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.Migrate(); // optional: run db update at startup
+    db.Database.Migrate();
+
+    // Runtime seeding:
     AppDbContext.SeedDebts(db);
+    AppDbContext.SeedTokens(db);
 }
 
 if (app.Environment.IsDevelopment())
