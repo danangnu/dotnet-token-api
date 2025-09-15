@@ -99,15 +99,29 @@ namespace dotnet_token_api.Migrations
                         new
                         {
                             Id = 1,
-                            Amount = 10m,
-                            ExpirationDate = new DateTime(2025, 8, 13, 20, 5, 6, 613, DateTimeKind.Utc).AddTicks(4456),
-                            IssuedAt = new DateTime(2025, 8, 6, 20, 5, 6, 613, DateTimeKind.Utc).AddTicks(4456),
-                            IssuerId = 2,
-                            IssuerUsername = "alice",
-                            RecipientId = 3,
+                            Amount = 50m,
+                            ExpirationDate = new DateTime(2025, 10, 10, 2, 57, 48, 336, DateTimeKind.Utc).AddTicks(8685),
+                            IssuedAt = new DateTime(2025, 9, 7, 2, 57, 48, 336, DateTimeKind.Utc).AddTicks(8667),
+                            IssuerId = 4,
+                            IssuerUsername = "user1",
+                            RecipientId = 5,
                             RecipientName = "Bob Johnson",
-                            RecipientUsername = "bob",
-                            Remarks = "Test token",
+                            RecipientUsername = "user2",
+                            Remarks = "Welcome credit",
+                            Status = "accepted"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Amount = 75m,
+                            ExpirationDate = new DateTime(2025, 10, 25, 2, 57, 48, 336, DateTimeKind.Utc).AddTicks(8700),
+                            IssuedAt = new DateTime(2025, 9, 9, 2, 57, 48, 336, DateTimeKind.Utc).AddTicks(8700),
+                            IssuerId = 5,
+                            IssuerUsername = "user2",
+                            RecipientId = 6,
+                            RecipientName = "Charlie Brown",
+                            RecipientUsername = "user3",
+                            Remarks = "Project advance",
                             Status = "pending"
                         });
                 });
@@ -161,29 +175,99 @@ namespace dotnet_token_api.Migrations
                             Email = "admin@example.com",
                             IsEmailVerified = false,
                             Name = "Administrator",
-                            PasswordHash = "$2a$11$XsZr4GMvkNNFa0JXLxB5LexfSGVvlkaM7X4o2Df0Atbz8EaaKfhXK",
-                            Role = "admin",
+                            PasswordHash = "$2a$11$DFqAGsSE3NGgjlAI7P8nI.d3maEW/hTvV2RpfP/baMRFc1avWQQie",
+                            Role = "Admin",
                             Username = "admin"
                         },
                         new
                         {
                             Id = 2,
-                            Email = "alice@example.com",
+                            Email = "manager@example.com",
                             IsEmailVerified = false,
-                            Name = "Alice Smith",
-                            PasswordHash = "$2a$11$p.SZkLb6F/pUTKmdKAz6JOV7vOHg1ZRanCrmxFO3dq9l/IgblpRym",
-                            Role = "user",
-                            Username = "alice"
+                            Name = "Manager One",
+                            PasswordHash = "$2a$11$DLvBftNyCYa3ITdbCwLf8uvPqRfEl7P31sGpmu9oqvm3gcEoenVRW",
+                            Role = "Manager",
+                            Username = "manager"
                         },
                         new
                         {
                             Id = 3,
+                            Email = "auditor@example.com",
+                            IsEmailVerified = false,
+                            Name = "Auditor Jane",
+                            PasswordHash = "$2a$11$AbeQHLAtE50AHy/sNJ4g3em.SOvYJibdwzONtQF2HKuyX6p4ht.mS",
+                            Role = "Auditor",
+                            Username = "auditor"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Email = "alice@example.com",
+                            IsEmailVerified = false,
+                            Name = "Alice Smith",
+                            PasswordHash = "$2a$11$yi.hFsOiDHD9nSerarnCIelTUtra839GqlQwF2wL8U8/In3THwGji",
+                            Role = "User",
+                            Username = "user1"
+                        },
+                        new
+                        {
+                            Id = 5,
                             Email = "bob@example.com",
                             IsEmailVerified = false,
                             Name = "Bob Johnson",
-                            PasswordHash = "$2a$11$oyGFrec31WJmEeByqBpqz.32kziHqFNJ6T/EXyH5PnrxJUReEiu0K",
-                            Role = "user",
-                            Username = "bob"
+                            PasswordHash = "$2a$11$4KHc1LH/nB8PUa9iJ4NovOAXW3QNWG74yk5Ft52uX7NbkVRqFK216",
+                            Role = "User",
+                            Username = "user2"
+                        },
+                        new
+                        {
+                            Id = 6,
+                            Email = "charlie@example.com",
+                            IsEmailVerified = false,
+                            Name = "Charlie Brown",
+                            PasswordHash = "$2a$11$ijUAJd2bvT.QAr5k6PatZ.MannLhfRnvnFu2BZnk1p.4Bg69MO4W.",
+                            Role = "User",
+                            Username = "user3"
+                        },
+                        new
+                        {
+                            Id = 7,
+                            Email = "diana@example.com",
+                            IsEmailVerified = false,
+                            Name = "Diana Prince",
+                            PasswordHash = "$2a$11$tdW8yUEDwE1PXHR8SzmsmO5MW6RWgn8ADxgxKZMQ1iopStybua0fK",
+                            Role = "User",
+                            Username = "user4"
+                        },
+                        new
+                        {
+                            Id = 8,
+                            Email = "ethan@example.com",
+                            IsEmailVerified = false,
+                            Name = "Ethan Hunt",
+                            PasswordHash = "$2a$11$Lmrlq4IK3FS6CFqlwSQpbeWYn2oldPcpPdJJ7BY0jWbHtURxqkm8S",
+                            Role = "User",
+                            Username = "user5"
+                        },
+                        new
+                        {
+                            Id = 9,
+                            Email = "fiona@example.com",
+                            IsEmailVerified = false,
+                            Name = "Fiona Apple",
+                            PasswordHash = "$2a$11$dD9akh5lCSIDt/sMUQ2pfO4vTLxtquPxuLhq.cJm2HBEbMAPfeevq",
+                            Role = "User",
+                            Username = "user6"
+                        },
+                        new
+                        {
+                            Id = 10,
+                            Email = "george@example.com",
+                            IsEmailVerified = false,
+                            Name = "George Miller",
+                            PasswordHash = "$2a$11$iZzc9OfSuZfSCkfn5CJZCOO9gizJSuOgvce0KvS20.PaTNCo14z2C",
+                            Role = "User",
+                            Username = "user7"
                         });
                 });
 
