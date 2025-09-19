@@ -236,7 +236,7 @@ public class DebtsController : ControllerBase
     }
 
     [Authorize]
-    [HttpGet("my/activity")]
+    [HttpGet("activity")]
     public async Task<ActionResult<IEnumerable<DebtActivityDto>>> GetMyRecentActivities()
     {
         var userId = GetUserIdOrThrow();

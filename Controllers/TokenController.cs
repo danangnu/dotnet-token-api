@@ -110,19 +110,28 @@ public class TokenController : ControllerBase
     [HttpGet("history")]
     public async Task<IActionResult> GetHistory([FromQuery] string? username = null)
     {
-        string targetUsername;
+        var currentUsername = GetCurrentUsername();
+        if (string.IsNullOrEmpty(currentUsername))
+            return Unauthorized();
 
+        var isAdmin = IsAdmin();
+
+        // If a username is provided, only admins may query others.
+        string targetUsername;
         if (!string.IsNullOrWhiteSpace(username))
         {
-            if (!IsAdmin())
-                return Forbid("Only admins can query other users’ history.");
+            if (!isAdmin && !string.Equals(username, currentUsername, StringComparison.OrdinalIgnoreCase))
+            {
+                // Do NOT use Forbid("message") — that string is treated as a scheme.
+                return StatusCode(403, "Only admins can query other users' history.");
+            }
+
             targetUsername = username;
         }
         else
         {
-            targetUsername = GetCurrentUsername() ?? string.Empty;
-            if (string.IsNullOrEmpty(targetUsername))
-                return Unauthorized();
+            // Default to current user
+            targetUsername = currentUsername;
         }
 
         var tokens = await _db.Tokens
