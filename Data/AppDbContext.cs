@@ -12,12 +12,12 @@ public class AppDbContext : DbContext
     public DbSet<DebtActivity> DebtActivities { get; set; } = null!;
 
     /// <summary>
-    /// Static data seeded via EF migrations (HasData). Good for fixed users/roles and a couple tokens.
+    /// Static data seeded via EF migrations (HasData).
+    /// Good for fixed users/roles and a couple tokens.
     /// </summary>
     public static void Seed(ModelBuilder modelBuilder)
     {
-        // --- Users (role-diverse) ---
-        // NOTE: HasData requires explicit IDs & deterministic values
+        // ---- Fixed users (stable IDs for HasData) ----
         var users = new[]
         {
             new User { Id = 1, Username = "admin",   Name = "Administrator", Email = "admin@example.com",   Role = "Admin",   PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin123!") },
@@ -34,9 +34,7 @@ public class AppDbContext : DbContext
         };
         modelBuilder.Entity<User>().HasData(users);
 
-        // --- A couple of starting tokens (purely illustrative) ---
-        // CAUTION: DateTime.UtcNow is evaluated at migration generation time.
-        // That’s OK for demo—but if you regenerate migrations frequently, consider fixed dates.
+        // ---- A couple of baseline tokens for demo ----
         modelBuilder.Entity<Token>().HasData(
             new Token
             {
@@ -62,86 +60,162 @@ public class AppDbContext : DbContext
     }
 
     /// <summary>
-    /// Runtime seed for debts (and optionally activities) so you can build loops and cross edges easily.
-    /// Call this once on app startup after migrations.
+    /// (Optional) Generate additional demo users at runtime (NOT HasData).
+    /// Call once at startup before seeding debts/tokens if you need a large graph.
     /// </summary>
-    public static void SeedDebts(AppDbContext context)
+    public static void EnsureDemoUsers(AppDbContext context, int totalUsers = 40)
+    {
+        // We already have 10 from HasData. Create the rest up to totalUsers.
+        var existing = context.Users.Count();
+        if (existing >= totalUsers) return;
+
+        var toCreate = totalUsers - existing;
+        var startIndex = existing + 1;
+
+        var list = new List<User>();
+        for (int i = 0; i < toCreate; i++)
+        {
+            var idx = startIndex + i;
+            list.Add(new User
+            {
+                Username = $"user{idx}",
+                Name = $"Demo User {idx}",
+                Email = $"user{idx}@example.com",
+                Role = "User",
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("User123!")
+            });
+        }
+
+        context.Users.AddRange(list);
+        context.SaveChanges();
+    }
+
+    /// <summary>
+    /// Runtime seed for debts so you can build multiple loops and cross edges easily.
+    /// Call this once on app startup AFTER users exist (and after migrations).
+    /// </summary>
+    public static void SeedDebts(AppDbContext context, int loopCount = 6, int usersPerLoop = 4)
     {
         if (context.Debts.Any()) return;
 
-        // Make sure our users exist
-        var u = context.Users.ToDictionary(x => x.Username, x => x);
-        if (!u.ContainsKey("user1") || !u.ContainsKey("user2") || !u.ContainsKey("user3")
-            || !u.ContainsKey("user4") || !u.ContainsKey("user5") || !u.ContainsKey("user6") || !u.ContainsKey("user7"))
-        {
-            // Not enough users yet (likely first migration not applied). Just bail safely.
-            return;
-        }
+        var users = context.Users
+            .OrderBy(u => u.Id)
+            .ToList();
+
+        // Need enough users to form the requested loops
+        if (users.Count < loopCount * usersPerLoop) return;
 
         var now = DateTime.UtcNow;
+        var debts = new List<Debt>();
 
-        var debts = new List<Debt>
+        // Create N loops of K users each
+        for (int l = 0; l < loopCount; l++)
         {
-            // --- Loop A: user1 → user2 → user3 → user1 ---
-            new Debt { FromUserId = u["user1"].Id, ToUserId = u["user2"].Id, Amount = 100, CreatedAt = now },
-            new Debt { FromUserId = u["user2"].Id, ToUserId = u["user3"].Id, Amount = 110, CreatedAt = now },
-            new Debt { FromUserId = u["user3"].Id, ToUserId = u["user1"].Id, Amount = 120, CreatedAt = now },
+            var block = users.Skip(l * usersPerLoop).Take(usersPerLoop).ToList();
+            if (block.Count < usersPerLoop) break;
 
-            // --- Loop B: user4 → user5 → user6 → user7 → user4 ---
-            new Debt { FromUserId = u["user4"].Id, ToUserId = u["user5"].Id, Amount = 200, CreatedAt = now },
-            new Debt { FromUserId = u["user5"].Id, ToUserId = u["user6"].Id, Amount = 210, CreatedAt = now },
-            new Debt { FromUserId = u["user6"].Id, ToUserId = u["user7"].Id, Amount = 220, CreatedAt = now },
-            new Debt { FromUserId = u["user7"].Id, ToUserId = u["user4"].Id, Amount = 230, CreatedAt = now },
+            for (int i = 0; i < usersPerLoop; i++)
+            {
+                var from = block[i];
+                var to = block[(i + 1) % usersPerLoop];
+                debts.Add(new Debt
+                {
+                    FromUserId = from.Id,
+                    ToUserId = to.Id,
+                    Amount = 100 + (l * 15) + (i * 7), // staggered amounts
+                    CreatedAt = now
+                });
+            }
+        }
 
-            // --- Cross edges (for extra realism) ---
-            new Debt { FromUserId = u["user2"].Id, ToUserId = u["user5"].Id, Amount = 90, CreatedAt = now },
-            new Debt { FromUserId = u["user6"].Id, ToUserId = u["user1"].Id, Amount = 60, CreatedAt = now }
-        };
+        // Cross-edges between loops to make the graph interesting
+        for (int i = 0; i < loopCount; i++)
+        {
+            var fromIdx = (i * usersPerLoop) % users.Count;
+            var toIdx = ((i + 1) * usersPerLoop + 1) % users.Count;
+            debts.Add(new Debt
+            {
+                FromUserId = users[fromIdx].Id,
+                ToUserId = users[toIdx].Id,
+                Amount = 40 + i * 10,
+                CreatedAt = now
+            });
+        }
+
+        // A few random extra edges
+        var rnd = new Random();
+        for (int i = 0; i < loopCount * 2; i++)
+        {
+            var a = users[rnd.Next(users.Count)];
+            var b = users[rnd.Next(users.Count)];
+            if (a.Id == b.Id) continue;
+
+            debts.Add(new Debt
+            {
+                FromUserId = a.Id,
+                ToUserId = b.Id,
+                Amount = rnd.Next(30, 250),
+                CreatedAt = now.AddMinutes(-rnd.Next(0, 5000))
+            });
+        }
 
         context.Debts.AddRange(debts);
         context.SaveChanges();
 
-        // Optional: seed a few activities
+        // Activities (optional)
         var activities = debts.Select(d => new DebtActivity
         {
             DebtId = d.Id,
             Action = "Issued",
             Timestamp = now,
             PerformedBy = "system-seed"
-        });
+        }).ToList();
+
         context.DebtActivities.AddRange(activities);
         context.SaveChanges();
     }
 
     /// <summary>
-    /// Optional: runtime token seeding for larger demos.
+    /// Runtime seed for tokens to simulate trading/transfer behavior.
     /// </summary>
-    public static void SeedTokens(AppDbContext context)
+    public static void SeedTokens(AppDbContext context, int tokenCount = 120)
     {
-        if (context.Tokens.Count() > 5) return; // avoid duplicating a lot
+        // Avoid duplicating too much demo data if already seeded
+        if (context.Tokens.Count() > 40) return;
 
-        var u = context.Users.ToDictionary(x => x.Username, x => x);
-        if (!u.ContainsKey("user1") || !u.ContainsKey("user2") || !u.ContainsKey("user3") || !u.ContainsKey("user4")) return;
+        var users = context.Users.ToList();
+        if (users.Count < 8) return;
 
-        var issue = DateTime.UtcNow.AddHours(-6);
+        var rnd = new Random();
+        var now = DateTime.UtcNow;
 
-        var extras = new[]
+        var tokens = new List<Token>();
+        for (int i = 0; i < tokenCount; i++)
         {
-            new Token {
-                IssuerId = u["user3"].Id, IssuerUsername = "user3",
-                RecipientId = u["user4"].Id, RecipientUsername = "user4", RecipientName = u["user4"].Name,
-                Amount = 35, Status = "accepted", Remarks = "Referral bonus",
-                IssuedAt = issue, ExpirationDate = issue.AddDays(60)
-            },
-            new Token {
-                IssuerId = u["user4"].Id, IssuerUsername = "user4",
-                RecipientId = u["user1"].Id, RecipientUsername = "user1", RecipientName = u["user1"].Name,
-                Amount = 15, Status = "declined", Remarks = "Promo",
-                IssuedAt = issue.AddHours(1), ExpirationDate = issue.AddDays(90)
-            }
-        };
+            var issuer = users[rnd.Next(users.Count)];
+            var recipient = users[rnd.Next(users.Count)];
+            if (issuer.Id == recipient.Id) continue;
 
-        context.Tokens.AddRange(extras);
+            var status = (i % 5 == 0) ? "declined"
+                       : (i % 3 == 0) ? "pending"
+                       : "accepted";
+
+            tokens.Add(new Token
+            {
+                IssuerId = issuer.Id,
+                IssuerUsername = issuer.Username,
+                RecipientId = recipient.Id,
+                RecipientUsername = recipient.Username,
+                RecipientName = recipient.Name,
+                Amount = rnd.Next(10, 400),
+                Status = status,
+                Remarks = "Auto-seeded demo token",
+                IssuedAt = now.AddMinutes(-rnd.Next(10, 20_000)),
+                ExpirationDate = now.AddDays(rnd.Next(15, 120))
+            });
+        }
+
+        context.Tokens.AddRange(tokens);
         context.SaveChanges();
     }
 

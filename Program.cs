@@ -92,9 +92,12 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
 
-    // Runtime seeding:
-    AppDbContext.SeedDebts(db);
-    AppDbContext.SeedTokens(db);
+    // 1) Ensure we have plenty of demo users (optional, bump 40 → 80 if you want bigger)
+    AppDbContext.EnsureDemoUsers(db, totalUsers: 40);
+
+    // 2) Seed runtime demo debts/tokens (only if not present)
+    AppDbContext.SeedDebts(db, loopCount: 8, usersPerLoop: 4);   // tweak to get bigger loops
+    AppDbContext.SeedTokens(db, tokenCount: 200);                // more tokens = richer tables
 }
 
 if (app.Environment.IsDevelopment())

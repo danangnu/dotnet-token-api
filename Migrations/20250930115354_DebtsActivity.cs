@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace dotnet_token_api.Migrations
 {
     /// <inheritdoc />
-    public partial class Debtsrecords : Migration
+    public partial class DebtsActivity : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -124,8 +124,8 @@ namespace dotnet_token_api.Migrations
                 columns: new[] { "Id", "Amount", "ExpirationDate", "IssuedAt", "IssuerId", "IssuerUsername", "RecipientId", "RecipientName", "RecipientUsername", "Remarks", "Status" },
                 values: new object[,]
                 {
-                    { 1, 50m, new DateTime(2025, 10, 10, 2, 57, 48, 336, DateTimeKind.Utc).AddTicks(8685), new DateTime(2025, 9, 7, 2, 57, 48, 336, DateTimeKind.Utc).AddTicks(8667), 4, "user1", 5, "Bob Johnson", "user2", "Welcome credit", "accepted" },
-                    { 2, 75m, new DateTime(2025, 10, 25, 2, 57, 48, 336, DateTimeKind.Utc).AddTicks(8700), new DateTime(2025, 9, 9, 2, 57, 48, 336, DateTimeKind.Utc).AddTicks(8700), 5, "user2", 6, "Charlie Brown", "user3", "Project advance", "pending" }
+                    { 1, 50m, new DateTime(2025, 10, 30, 11, 53, 54, 70, DateTimeKind.Utc).AddTicks(5068), new DateTime(2025, 9, 27, 11, 53, 54, 70, DateTimeKind.Utc).AddTicks(5059), 4, "user1", 5, "Bob Johnson", "user2", "Welcome credit", "accepted" },
+                    { 2, 75m, new DateTime(2025, 11, 14, 11, 53, 54, 70, DateTimeKind.Utc).AddTicks(5077), new DateTime(2025, 9, 29, 11, 53, 54, 70, DateTimeKind.Utc).AddTicks(5076), 5, "user2", 6, "Charlie Brown", "user3", "Project advance", "pending" }
                 });
 
             migrationBuilder.InsertData(
@@ -133,16 +133,16 @@ namespace dotnet_token_api.Migrations
                 columns: new[] { "Id", "Email", "EmailTokenExpiry", "EmailVerificationToken", "IsEmailVerified", "Name", "PasswordHash", "PasswordResetToken", "PasswordResetTokenExpiry", "Role", "Username" },
                 values: new object[,]
                 {
-                    { 1, "admin@example.com", null, null, false, "Administrator", "$2a$11$DFqAGsSE3NGgjlAI7P8nI.d3maEW/hTvV2RpfP/baMRFc1avWQQie", null, null, "Admin", "admin" },
-                    { 2, "manager@example.com", null, null, false, "Manager One", "$2a$11$DLvBftNyCYa3ITdbCwLf8uvPqRfEl7P31sGpmu9oqvm3gcEoenVRW", null, null, "Manager", "manager" },
-                    { 3, "auditor@example.com", null, null, false, "Auditor Jane", "$2a$11$AbeQHLAtE50AHy/sNJ4g3em.SOvYJibdwzONtQF2HKuyX6p4ht.mS", null, null, "Auditor", "auditor" },
-                    { 4, "alice@example.com", null, null, false, "Alice Smith", "$2a$11$yi.hFsOiDHD9nSerarnCIelTUtra839GqlQwF2wL8U8/In3THwGji", null, null, "User", "user1" },
-                    { 5, "bob@example.com", null, null, false, "Bob Johnson", "$2a$11$4KHc1LH/nB8PUa9iJ4NovOAXW3QNWG74yk5Ft52uX7NbkVRqFK216", null, null, "User", "user2" },
-                    { 6, "charlie@example.com", null, null, false, "Charlie Brown", "$2a$11$ijUAJd2bvT.QAr5k6PatZ.MannLhfRnvnFu2BZnk1p.4Bg69MO4W.", null, null, "User", "user3" },
-                    { 7, "diana@example.com", null, null, false, "Diana Prince", "$2a$11$tdW8yUEDwE1PXHR8SzmsmO5MW6RWgn8ADxgxKZMQ1iopStybua0fK", null, null, "User", "user4" },
-                    { 8, "ethan@example.com", null, null, false, "Ethan Hunt", "$2a$11$Lmrlq4IK3FS6CFqlwSQpbeWYn2oldPcpPdJJ7BY0jWbHtURxqkm8S", null, null, "User", "user5" },
-                    { 9, "fiona@example.com", null, null, false, "Fiona Apple", "$2a$11$dD9akh5lCSIDt/sMUQ2pfO4vTLxtquPxuLhq.cJm2HBEbMAPfeevq", null, null, "User", "user6" },
-                    { 10, "george@example.com", null, null, false, "George Miller", "$2a$11$iZzc9OfSuZfSCkfn5CJZCOO9gizJSuOgvce0KvS20.PaTNCo14z2C", null, null, "User", "user7" }
+                    { 1, "admin@example.com", null, null, false, "Administrator", "$2a$11$iHc/wjm1ky1sdneODv8NQeI6.HXjDU6oJONNMOHYPIxsZLIPcwkJm", null, null, "Admin", "admin" },
+                    { 2, "manager@example.com", null, null, false, "Manager One", "$2a$11$RGGxh5hD7YYQ3hkG86mHPOee6uIyoKkdLuVh/SdHVIfw87vyLHsMe", null, null, "Manager", "manager" },
+                    { 3, "auditor@example.com", null, null, false, "Auditor Jane", "$2a$11$f5oBFOdg4N8KizHVz1twh.LwDWKF2T4zR1bwcenbVm6jrQgAjd336", null, null, "Auditor", "auditor" },
+                    { 4, "alice@example.com", null, null, false, "Alice Smith", "$2a$11$ELDnV1tFdB0xbo6T3bQJWOw8TjTNinbGIgfqKoz6S02p0hIdlW.eK", null, null, "User", "user1" },
+                    { 5, "bob@example.com", null, null, false, "Bob Johnson", "$2a$11$77hdjyB5HOYKPCVt0XVLaeFglitCLdiTH63QtZBujQF9MaPQbeSo.", null, null, "User", "user2" },
+                    { 6, "charlie@example.com", null, null, false, "Charlie Brown", "$2a$11$59oMcQzl4moHmcWS83yyBO7XV0f54qEYMXcXOQokTjz8mGDGzEnSO", null, null, "User", "user3" },
+                    { 7, "diana@example.com", null, null, false, "Diana Prince", "$2a$11$5.skadJK/pzZf8VK25i79euL6D2mQ6iikrOn/MzmXLKcgRhNCHA.i", null, null, "User", "user4" },
+                    { 8, "ethan@example.com", null, null, false, "Ethan Hunt", "$2a$11$yIzRVp3JeRFS1CyD.KQGauKcmI/5yUiynoCdJPfVCZn0F1W2q47Fy", null, null, "User", "user5" },
+                    { 9, "fiona@example.com", null, null, false, "Fiona Apple", "$2a$11$JJFDfdWrUlPslkBVSsL2FuBaDPxz7Ommmg3JpjHEQGafY9H4MQjXu", null, null, "User", "user6" },
+                    { 10, "george@example.com", null, null, false, "George Miller", "$2a$11$Hiy5DefyUX2./60aTojCLuBQF.2BZD/IAB/F2eO.a4QKN/TaQAs4W", null, null, "User", "user7" }
                 });
 
             migrationBuilder.CreateIndex(

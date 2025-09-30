@@ -100,8 +100,8 @@ namespace dotnet_token_api.Migrations
                         {
                             Id = 1,
                             Amount = 50m,
-                            ExpirationDate = new DateTime(2025, 10, 10, 2, 57, 48, 336, DateTimeKind.Utc).AddTicks(8685),
-                            IssuedAt = new DateTime(2025, 9, 7, 2, 57, 48, 336, DateTimeKind.Utc).AddTicks(8667),
+                            ExpirationDate = new DateTime(2025, 10, 30, 11, 53, 54, 70, DateTimeKind.Utc).AddTicks(5068),
+                            IssuedAt = new DateTime(2025, 9, 27, 11, 53, 54, 70, DateTimeKind.Utc).AddTicks(5059),
                             IssuerId = 4,
                             IssuerUsername = "user1",
                             RecipientId = 5,
@@ -114,8 +114,8 @@ namespace dotnet_token_api.Migrations
                         {
                             Id = 2,
                             Amount = 75m,
-                            ExpirationDate = new DateTime(2025, 10, 25, 2, 57, 48, 336, DateTimeKind.Utc).AddTicks(8700),
-                            IssuedAt = new DateTime(2025, 9, 9, 2, 57, 48, 336, DateTimeKind.Utc).AddTicks(8700),
+                            ExpirationDate = new DateTime(2025, 11, 14, 11, 53, 54, 70, DateTimeKind.Utc).AddTicks(5077),
+                            IssuedAt = new DateTime(2025, 9, 29, 11, 53, 54, 70, DateTimeKind.Utc).AddTicks(5076),
                             IssuerId = 5,
                             IssuerUsername = "user2",
                             RecipientId = 6,
@@ -175,7 +175,7 @@ namespace dotnet_token_api.Migrations
                             Email = "admin@example.com",
                             IsEmailVerified = false,
                             Name = "Administrator",
-                            PasswordHash = "$2a$11$DFqAGsSE3NGgjlAI7P8nI.d3maEW/hTvV2RpfP/baMRFc1avWQQie",
+                            PasswordHash = "$2a$11$iHc/wjm1ky1sdneODv8NQeI6.HXjDU6oJONNMOHYPIxsZLIPcwkJm",
                             Role = "Admin",
                             Username = "admin"
                         },
@@ -185,7 +185,7 @@ namespace dotnet_token_api.Migrations
                             Email = "manager@example.com",
                             IsEmailVerified = false,
                             Name = "Manager One",
-                            PasswordHash = "$2a$11$DLvBftNyCYa3ITdbCwLf8uvPqRfEl7P31sGpmu9oqvm3gcEoenVRW",
+                            PasswordHash = "$2a$11$RGGxh5hD7YYQ3hkG86mHPOee6uIyoKkdLuVh/SdHVIfw87vyLHsMe",
                             Role = "Manager",
                             Username = "manager"
                         },
@@ -195,7 +195,7 @@ namespace dotnet_token_api.Migrations
                             Email = "auditor@example.com",
                             IsEmailVerified = false,
                             Name = "Auditor Jane",
-                            PasswordHash = "$2a$11$AbeQHLAtE50AHy/sNJ4g3em.SOvYJibdwzONtQF2HKuyX6p4ht.mS",
+                            PasswordHash = "$2a$11$f5oBFOdg4N8KizHVz1twh.LwDWKF2T4zR1bwcenbVm6jrQgAjd336",
                             Role = "Auditor",
                             Username = "auditor"
                         },
@@ -205,7 +205,7 @@ namespace dotnet_token_api.Migrations
                             Email = "alice@example.com",
                             IsEmailVerified = false,
                             Name = "Alice Smith",
-                            PasswordHash = "$2a$11$yi.hFsOiDHD9nSerarnCIelTUtra839GqlQwF2wL8U8/In3THwGji",
+                            PasswordHash = "$2a$11$ELDnV1tFdB0xbo6T3bQJWOw8TjTNinbGIgfqKoz6S02p0hIdlW.eK",
                             Role = "User",
                             Username = "user1"
                         },
@@ -215,7 +215,7 @@ namespace dotnet_token_api.Migrations
                             Email = "bob@example.com",
                             IsEmailVerified = false,
                             Name = "Bob Johnson",
-                            PasswordHash = "$2a$11$4KHc1LH/nB8PUa9iJ4NovOAXW3QNWG74yk5Ft52uX7NbkVRqFK216",
+                            PasswordHash = "$2a$11$77hdjyB5HOYKPCVt0XVLaeFglitCLdiTH63QtZBujQF9MaPQbeSo.",
                             Role = "User",
                             Username = "user2"
                         },
@@ -225,7 +225,7 @@ namespace dotnet_token_api.Migrations
                             Email = "charlie@example.com",
                             IsEmailVerified = false,
                             Name = "Charlie Brown",
-                            PasswordHash = "$2a$11$ijUAJd2bvT.QAr5k6PatZ.MannLhfRnvnFu2BZnk1p.4Bg69MO4W.",
+                            PasswordHash = "$2a$11$59oMcQzl4moHmcWS83yyBO7XV0f54qEYMXcXOQokTjz8mGDGzEnSO",
                             Role = "User",
                             Username = "user3"
                         },
@@ -235,7 +235,7 @@ namespace dotnet_token_api.Migrations
                             Email = "diana@example.com",
                             IsEmailVerified = false,
                             Name = "Diana Prince",
-                            PasswordHash = "$2a$11$tdW8yUEDwE1PXHR8SzmsmO5MW6RWgn8ADxgxKZMQ1iopStybua0fK",
+                            PasswordHash = "$2a$11$5.skadJK/pzZf8VK25i79euL6D2mQ6iikrOn/MzmXLKcgRhNCHA.i",
                             Role = "User",
                             Username = "user4"
                         },
@@ -245,7 +245,7 @@ namespace dotnet_token_api.Migrations
                             Email = "ethan@example.com",
                             IsEmailVerified = false,
                             Name = "Ethan Hunt",
-                            PasswordHash = "$2a$11$Lmrlq4IK3FS6CFqlwSQpbeWYn2oldPcpPdJJ7BY0jWbHtURxqkm8S",
+                            PasswordHash = "$2a$11$yIzRVp3JeRFS1CyD.KQGauKcmI/5yUiynoCdJPfVCZn0F1W2q47Fy",
                             Role = "User",
                             Username = "user5"
                         },
@@ -255,7 +255,7 @@ namespace dotnet_token_api.Migrations
                             Email = "fiona@example.com",
                             IsEmailVerified = false,
                             Name = "Fiona Apple",
-                            PasswordHash = "$2a$11$dD9akh5lCSIDt/sMUQ2pfO4vTLxtquPxuLhq.cJm2HBEbMAPfeevq",
+                            PasswordHash = "$2a$11$JJFDfdWrUlPslkBVSsL2FuBaDPxz7Ommmg3JpjHEQGafY9H4MQjXu",
                             Role = "User",
                             Username = "user6"
                         },
@@ -265,7 +265,7 @@ namespace dotnet_token_api.Migrations
                             Email = "george@example.com",
                             IsEmailVerified = false,
                             Name = "George Miller",
-                            PasswordHash = "$2a$11$iZzc9OfSuZfSCkfn5CJZCOO9gizJSuOgvce0KvS20.PaTNCo14z2C",
+                            PasswordHash = "$2a$11$Hiy5DefyUX2./60aTojCLuBQF.2BZD/IAB/F2eO.a4QKN/TaQAs4W",
                             Role = "User",
                             Username = "user7"
                         });
