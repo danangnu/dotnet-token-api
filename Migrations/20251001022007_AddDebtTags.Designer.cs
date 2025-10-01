@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace dotnet_token_api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250930115354_DebtsActivity")]
-    partial class DebtsActivity
+    [Migration("20251001022007_AddDebtTags")]
+    partial class AddDebtTags
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -103,8 +103,8 @@ namespace dotnet_token_api.Migrations
                         {
                             Id = 1,
                             Amount = 50m,
-                            ExpirationDate = new DateTime(2025, 10, 30, 11, 53, 54, 70, DateTimeKind.Utc).AddTicks(5068),
-                            IssuedAt = new DateTime(2025, 9, 27, 11, 53, 54, 70, DateTimeKind.Utc).AddTicks(5059),
+                            ExpirationDate = new DateTime(2025, 10, 31, 2, 20, 6, 158, DateTimeKind.Utc).AddTicks(1750),
+                            IssuedAt = new DateTime(2025, 9, 28, 2, 20, 6, 158, DateTimeKind.Utc).AddTicks(1734),
                             IssuerId = 4,
                             IssuerUsername = "user1",
                             RecipientId = 5,
@@ -117,8 +117,8 @@ namespace dotnet_token_api.Migrations
                         {
                             Id = 2,
                             Amount = 75m,
-                            ExpirationDate = new DateTime(2025, 11, 14, 11, 53, 54, 70, DateTimeKind.Utc).AddTicks(5077),
-                            IssuedAt = new DateTime(2025, 9, 29, 11, 53, 54, 70, DateTimeKind.Utc).AddTicks(5076),
+                            ExpirationDate = new DateTime(2025, 11, 15, 2, 20, 6, 158, DateTimeKind.Utc).AddTicks(1768),
+                            IssuedAt = new DateTime(2025, 9, 30, 2, 20, 6, 158, DateTimeKind.Utc).AddTicks(1767),
                             IssuerId = 5,
                             IssuerUsername = "user2",
                             RecipientId = 6,
@@ -178,7 +178,7 @@ namespace dotnet_token_api.Migrations
                             Email = "admin@example.com",
                             IsEmailVerified = false,
                             Name = "Administrator",
-                            PasswordHash = "$2a$11$iHc/wjm1ky1sdneODv8NQeI6.HXjDU6oJONNMOHYPIxsZLIPcwkJm",
+                            PasswordHash = "$2a$11$lzafyhbuWpstvCb3R94BSu8aQMBZlvE6.HmYAvFbljcfNDTPXcUKq",
                             Role = "Admin",
                             Username = "admin"
                         },
@@ -188,7 +188,7 @@ namespace dotnet_token_api.Migrations
                             Email = "manager@example.com",
                             IsEmailVerified = false,
                             Name = "Manager One",
-                            PasswordHash = "$2a$11$RGGxh5hD7YYQ3hkG86mHPOee6uIyoKkdLuVh/SdHVIfw87vyLHsMe",
+                            PasswordHash = "$2a$11$Ie3KNErrWHIa8hbeGurIUeVyorcowt9XF9VkgMJ18/Yud7sD6nj.G",
                             Role = "Manager",
                             Username = "manager"
                         },
@@ -198,7 +198,7 @@ namespace dotnet_token_api.Migrations
                             Email = "auditor@example.com",
                             IsEmailVerified = false,
                             Name = "Auditor Jane",
-                            PasswordHash = "$2a$11$f5oBFOdg4N8KizHVz1twh.LwDWKF2T4zR1bwcenbVm6jrQgAjd336",
+                            PasswordHash = "$2a$11$Y2Owt8BD9VzkXBVKfuGk7.wVtVGVPp82OhhBBeZYuO/MG.xwG2mRi",
                             Role = "Auditor",
                             Username = "auditor"
                         },
@@ -208,7 +208,7 @@ namespace dotnet_token_api.Migrations
                             Email = "alice@example.com",
                             IsEmailVerified = false,
                             Name = "Alice Smith",
-                            PasswordHash = "$2a$11$ELDnV1tFdB0xbo6T3bQJWOw8TjTNinbGIgfqKoz6S02p0hIdlW.eK",
+                            PasswordHash = "$2a$11$1oS3BHCyTwjDEqc7GGn1VuKOIc.DTO/C4OLnpvmcXbCQBq2c4SqVS",
                             Role = "User",
                             Username = "user1"
                         },
@@ -218,7 +218,7 @@ namespace dotnet_token_api.Migrations
                             Email = "bob@example.com",
                             IsEmailVerified = false,
                             Name = "Bob Johnson",
-                            PasswordHash = "$2a$11$77hdjyB5HOYKPCVt0XVLaeFglitCLdiTH63QtZBujQF9MaPQbeSo.",
+                            PasswordHash = "$2a$11$iVqwR0zTC63bQgAUCWVv5.zobRRRo.5ziHT7zoBcFt5XhecLKXL/S",
                             Role = "User",
                             Username = "user2"
                         },
@@ -228,7 +228,7 @@ namespace dotnet_token_api.Migrations
                             Email = "charlie@example.com",
                             IsEmailVerified = false,
                             Name = "Charlie Brown",
-                            PasswordHash = "$2a$11$59oMcQzl4moHmcWS83yyBO7XV0f54qEYMXcXOQokTjz8mGDGzEnSO",
+                            PasswordHash = "$2a$11$0VRgfHkwdRlIOTtU2EPTTubDiaOdgB6rly/vHsiclv9Yu7vpfq9iS",
                             Role = "User",
                             Username = "user3"
                         },
@@ -238,7 +238,7 @@ namespace dotnet_token_api.Migrations
                             Email = "diana@example.com",
                             IsEmailVerified = false,
                             Name = "Diana Prince",
-                            PasswordHash = "$2a$11$5.skadJK/pzZf8VK25i79euL6D2mQ6iikrOn/MzmXLKcgRhNCHA.i",
+                            PasswordHash = "$2a$11$BIPa1rFN5UtecqtYdAyTU.Ob/bc10q5LGeRhTrCuz6t1.hcDt0jyS",
                             Role = "User",
                             Username = "user4"
                         },
@@ -248,7 +248,7 @@ namespace dotnet_token_api.Migrations
                             Email = "ethan@example.com",
                             IsEmailVerified = false,
                             Name = "Ethan Hunt",
-                            PasswordHash = "$2a$11$yIzRVp3JeRFS1CyD.KQGauKcmI/5yUiynoCdJPfVCZn0F1W2q47Fy",
+                            PasswordHash = "$2a$11$yCubssNv6zjt3C0PaDZDEeOORdMbrie6X/s07rY0ryZo7XSD2Ujgu",
                             Role = "User",
                             Username = "user5"
                         },
@@ -258,7 +258,7 @@ namespace dotnet_token_api.Migrations
                             Email = "fiona@example.com",
                             IsEmailVerified = false,
                             Name = "Fiona Apple",
-                            PasswordHash = "$2a$11$JJFDfdWrUlPslkBVSsL2FuBaDPxz7Ommmg3JpjHEQGafY9H4MQjXu",
+                            PasswordHash = "$2a$11$SnxeWBThsVkFy6tf0mCbxe3aNT72053hm9cssNjedQdHkDNOIY2tm",
                             Role = "User",
                             Username = "user6"
                         },
@@ -268,7 +268,7 @@ namespace dotnet_token_api.Migrations
                             Email = "george@example.com",
                             IsEmailVerified = false,
                             Name = "George Miller",
-                            PasswordHash = "$2a$11$Hiy5DefyUX2./60aTojCLuBQF.2BZD/IAB/F2eO.a4QKN/TaQAs4W",
+                            PasswordHash = "$2a$11$JVWmAmMLD5mVwUoXAh1YE.9tk/G8qz.3Oy7mkvzRaMOKP0s9x6d32",
                             Role = "User",
                             Username = "user7"
                         });
@@ -282,8 +282,8 @@ namespace dotnet_token_api.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<decimal>("Amount")
-                        .HasColumnType("decimal(65,30)");
+                    b.Property<double>("Amount")
+                        .HasColumnType("double");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
@@ -296,6 +296,9 @@ namespace dotnet_token_api.Migrations
 
                     b.Property<decimal>("PaidAmount")
                         .HasColumnType("decimal(65,30)");
+
+                    b.Property<string>("Tag")
+                        .HasColumnType("longtext");
 
                     b.Property<int>("ToUserId")
                         .HasColumnType("int");

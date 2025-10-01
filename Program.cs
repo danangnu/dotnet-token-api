@@ -11,8 +11,15 @@ var configuration = new ConfigurationBuilder()
 	.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true).Build();
 var key = configuration["Jwt:Key"];
 var issuer = configuration["Jwt:Issuer"];
-Console.WriteLine($"[DEBUG] JWT Key: '{key}' (Length: {key.Length} chars)");
-Console.WriteLine($"[DEBUG] Byte Length: {Encoding.UTF8.GetBytes(key).Length} bytes");
+if (!string.IsNullOrEmpty(key))
+{
+    Console.WriteLine($"[DEBUG] JWT Key: '{key}' (Length: {key.Length} chars)");
+}
+else
+{
+    Console.WriteLine("[DEBUG] JWT Key is null or empty.");
+}
+Console.WriteLine($"[DEBUG] Byte Length: {(key != null ? Encoding.UTF8.GetBytes(key).Length : 0)} bytes");
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -92,12 +99,10 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
 
-    // 1) Ensure we have plenty of demo users (optional, bump 40 → 80 if you want bigger)
-    AppDbContext.EnsureDemoUsers(db, totalUsers: 40);
-
-    // 2) Seed runtime demo debts/tokens (only if not present)
-    AppDbContext.SeedDebts(db, loopCount: 8, usersPerLoop: 4);   // tweak to get bigger loops
-    AppDbContext.SeedTokens(db, tokenCount: 200);                // more tokens = richer tables
+    AppDbContext.EnsureDemoUsers(db, 40);        // optional large demo users
+    AppDbContext.SeedDebts(db, 6, 4);            // generic loops/cross edges (Tag=null)
+    AppDbContext.SeedTokens(db, 120);            // many tokens
+    AppDbContext.SeedBeforeAndAfterOffset(db);   // <<< the new before/after samples
 }
 
 if (app.Environment.IsDevelopment())

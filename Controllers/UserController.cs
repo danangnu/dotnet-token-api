@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using dotnet_token_api.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 
@@ -32,7 +31,9 @@ namespace dotnet_token_api.Controllers
             if (string.IsNullOrWhiteSpace(query)) return BadRequest("Query is required.");
 
             var users = await _context.Users
-                .Where(u => u.Email.Contains(query) || u.Username.Contains(query) || u.Name.Contains(query))
+                .Where(u => (u.Email != null && u.Email.Contains(query)) || 
+                            (u.Username != null && u.Username.Contains(query)) || 
+                            (u.Name != null && u.Name.Contains(query)))
                 .Select(u => new
                 {
                     u.Id,

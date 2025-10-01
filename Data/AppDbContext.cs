@@ -65,7 +65,6 @@ public class AppDbContext : DbContext
     /// </summary>
     public static void EnsureDemoUsers(AppDbContext context, int totalUsers = 40)
     {
-        // We already have 10 from HasData. Create the rest up to totalUsers.
         var existing = context.Users.Count();
         if (existing >= totalUsers) return;
 
@@ -96,13 +95,12 @@ public class AppDbContext : DbContext
     /// </summary>
     public static void SeedDebts(AppDbContext context, int loopCount = 6, int usersPerLoop = 4)
     {
-        if (context.Debts.Any()) return;
+        if (context.Debts.Any(d => d.Tag == null)) return; // don't re-seed generic debts if they exist
 
         var users = context.Users
             .OrderBy(u => u.Id)
             .ToList();
 
-        // Need enough users to form the requested loops
         if (users.Count < loopCount * usersPerLoop) return;
 
         var now = DateTime.UtcNow;
@@ -122,8 +120,9 @@ public class AppDbContext : DbContext
                 {
                     FromUserId = from.Id,
                     ToUserId = to.Id,
-                    Amount = 100 + (l * 15) + (i * 7), // staggered amounts
-                    CreatedAt = now
+                    Amount = 100 + (l * 15) + (i * 7),
+                    CreatedAt = now,
+                    Tag = null // generic / untagged dataset
                 });
             }
         }
@@ -138,7 +137,8 @@ public class AppDbContext : DbContext
                 FromUserId = users[fromIdx].Id,
                 ToUserId = users[toIdx].Id,
                 Amount = 40 + i * 10,
-                CreatedAt = now
+                CreatedAt = DateTime.UtcNow,
+                Tag = null
             });
         }
 
@@ -155,14 +155,14 @@ public class AppDbContext : DbContext
                 FromUserId = a.Id,
                 ToUserId = b.Id,
                 Amount = rnd.Next(30, 250),
-                CreatedAt = now.AddMinutes(-rnd.Next(0, 5000))
+                CreatedAt = DateTime.UtcNow.AddMinutes(-rnd.Next(0, 5000)),
+                Tag = null
             });
         }
 
         context.Debts.AddRange(debts);
         context.SaveChanges();
 
-        // Activities (optional)
         var activities = debts.Select(d => new DebtActivity
         {
             DebtId = d.Id,
@@ -180,7 +180,6 @@ public class AppDbContext : DbContext
     /// </summary>
     public static void SeedTokens(AppDbContext context, int tokenCount = 120)
     {
-        // Avoid duplicating too much demo data if already seeded
         if (context.Tokens.Count() > 40) return;
 
         var users = context.Users.ToList();
@@ -203,9 +202,9 @@ public class AppDbContext : DbContext
             tokens.Add(new Token
             {
                 IssuerId = issuer.Id,
-                IssuerUsername = issuer.Username,
+                IssuerUsername = issuer.Username!,
                 RecipientId = recipient.Id,
-                RecipientUsername = recipient.Username,
+                RecipientUsername = recipient.Username!,
                 RecipientName = recipient.Name,
                 Amount = rnd.Next(10, 400),
                 Status = status,
@@ -216,6 +215,68 @@ public class AppDbContext : DbContext
         }
 
         context.Tokens.AddRange(tokens);
+        context.SaveChanges();
+    }
+
+    /// <summary>
+    /// Seed a labeled “BeforeOffset” dataset (circular/raw) and a labeled “AfterOffset” dataset (netted).
+    /// Useful for visual comparisons in the UI and demos.
+    /// </summary>
+    public static void SeedBeforeAndAfterOffset(AppDbContext context)
+    {
+        // avoid reseeding the scenario if either tag already exists
+        if (context.Debts.Any(d => d.Tag == "BeforeOffset" || d.Tag == "AfterOffset"))
+            return;
+
+        var users = context.Users.OrderBy(u => u.Id).Take(6).ToList(); // use the first 6 users
+        if (users.Count < 3) return;
+
+        var now = DateTime.UtcNow;
+
+        // --- BEFORE OFFSET (contains a loop and a short chain) ---
+        var before = new List<Debt>
+        {
+            // Loop: user1 → user2 → user3 → user1
+            new Debt { FromUserId = users[0].Id, ToUserId = users[1].Id, Amount = 100, CreatedAt = now, Tag = "BeforeOffset" },
+            new Debt { FromUserId = users[1].Id, ToUserId = users[2].Id, Amount = 120, CreatedAt = now, Tag = "BeforeOffset" },
+            new Debt { FromUserId = users[2].Id, ToUserId = users[0].Id, Amount =  80, CreatedAt = now, Tag = "BeforeOffset" },
+
+            // Chain: user4 → user5 → user6
+            new Debt { FromUserId = users[3].Id, ToUserId = users[4].Id, Amount = 200, CreatedAt = now, Tag = "BeforeOffset" },
+            new Debt { FromUserId = users[4].Id, ToUserId = users[5].Id, Amount = 150, CreatedAt = now, Tag = "BeforeOffset" }
+        };
+        context.Debts.AddRange(before);
+        context.SaveChanges();
+
+        // --- AFTER OFFSET (netted results) ---
+        // Loop netting example yields user1 → user2 : 20
+        // Chain netting example yields user4 → user6 : 50
+        var after = new List<Debt>
+        {
+            new Debt { FromUserId = users[0].Id, ToUserId = users[1].Id, Amount = 20,  CreatedAt = now, Tag = "AfterOffset" },
+            new Debt { FromUserId = users[3].Id, ToUserId = users[5].Id, Amount = 50,  CreatedAt = now, Tag = "AfterOffset" }
+        };
+        context.Debts.AddRange(after);
+        context.SaveChanges();
+
+        // Activities to label provenance in timeline
+        var acts = before.Select(d => new DebtActivity
+        {
+            DebtId = d.Id,
+            Action = "Issued",
+            Timestamp = now,
+            PerformedBy = "system-seed"
+        }).ToList();
+
+        acts.AddRange(after.Select(d => new DebtActivity
+        {
+            DebtId = d.Id,
+            Action = "OffsetResult",
+            Timestamp = now,
+            PerformedBy = "system-seed"
+        }));
+
+        context.DebtActivities.AddRange(acts);
         context.SaveChanges();
     }
 

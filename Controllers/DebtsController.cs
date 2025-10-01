@@ -59,7 +59,7 @@ public class DebtsController : ControllerBase
                 g.Key.ToUserId,
                 TotalAmount = g.Sum(d => d.Amount),
                 TotalPaid = g.Sum(d => d.PaidAmount),
-                Remaining = g.Sum(d => d.Amount - d.PaidAmount),
+                Remaining = g.Sum(d => (decimal)d.Amount - d.PaidAmount),
                 IsFullySettled = g.All(d => d.IsSettled),
                 Count = g.Count()
             })
@@ -74,7 +74,7 @@ public class DebtsController : ControllerBase
     {
         var totalDebt = await _context.Debts.SumAsync(d => d.Amount);
         var totalPaid = await _context.Debts.SumAsync(d => d.PaidAmount);
-        var totalUnsettled = totalDebt - totalPaid;
+        var totalUnsettled = (decimal)totalDebt - totalPaid;
 
         var fromUsers = await _context.Debts.Where(d => !d.IsSettled).Select(d => d.FromUserId).ToListAsync();
         var toUsers = await _context.Debts.Where(d => !d.IsSettled).Select(d => d.ToUserId).ToListAsync();
@@ -83,14 +83,14 @@ public class DebtsController : ControllerBase
         var topDebtor = await _context.Debts
             .Where(d => !d.IsSettled)
             .GroupBy(d => d.FromUserId)
-            .Select(g => new { UserId = g.Key, Total = g.Sum(x => x.Amount - x.PaidAmount) })
+            .Select(g => new { UserId = g.Key, Total = g.Sum(x => (decimal)x.Amount - x.PaidAmount) })
             .OrderByDescending(g => g.Total)
             .FirstOrDefaultAsync();
 
         var topCreditor = await _context.Debts
             .Where(d => !d.IsSettled)
             .GroupBy(d => d.ToUserId)
-            .Select(g => new { UserId = g.Key, Total = g.Sum(x => x.Amount - x.PaidAmount) })
+            .Select(g => new { UserId = g.Key, Total = g.Sum(x => (decimal)x.Amount - x.PaidAmount) })
             .OrderByDescending(g => g.Total)
             .FirstOrDefaultAsync();
 
@@ -104,7 +104,7 @@ public class DebtsController : ControllerBase
 
         return Ok(new DebtSummaryDto
         {
-            TotalDebt = totalDebt,
+            TotalDebt = (decimal)totalDebt,
             TotalSettled = totalPaid,
             TotalUnsettled = totalUnsettled,
             ActiveUsersInDebt = usersInDebt,
@@ -128,7 +128,7 @@ public class DebtsController : ControllerBase
             {
                 FromUser = users.GetValueOrDefault(g.Key.FromUserId, $"User {g.Key.FromUserId}"),
                 ToUser = users.GetValueOrDefault(g.Key.ToUserId, $"User {g.Key.ToUserId}"),
-                Amount = g.Sum(d => d.Amount - d.PaidAmount)
+                Amount = g.Sum(d => (decimal)d.Amount - d.PaidAmount)
             })
             .ToList();
 
@@ -175,7 +175,7 @@ public class DebtsController : ControllerBase
                 Id = d.Id,
                 Debtor = fu.Name ?? fu.Username ?? $"User {d.FromUserId}",
                 Creditor = tu.Name ?? tu.Username ?? $"User {d.ToUserId}",
-                Amount = d.Amount,
+                Amount = (decimal)d.Amount,
                 Remarks = "", // future-proof
                 IsSettled = d.IsSettled,
                 CreatedAt = d.CreatedAt,
@@ -196,7 +196,7 @@ public class DebtsController : ControllerBase
 
         var total = await myDebts.SumAsync(d => d.Amount);
         var paid = await myDebts.SumAsync(d => d.PaidAmount);
-        var remaining = total - paid;
+        var remaining = (decimal)total - paid;
 
         return Ok(new
         {
@@ -228,7 +228,7 @@ public class DebtsController : ControllerBase
             {
                 FromUser = users.GetValueOrDefault(g.Key.FromUserId, $"User {g.Key.FromUserId}"),
                 ToUser = users.GetValueOrDefault(g.Key.ToUserId, $"User {g.Key.ToUserId}"),
-                Amount = g.Sum(d => d.Amount - d.PaidAmount)
+                Amount = g.Sum(d => (decimal)d.Amount - d.PaidAmount)
             })
             .ToList();
 
@@ -253,7 +253,7 @@ public class DebtsController : ControllerBase
                 PerformedBy = a.PerformedBy,
                 From = a.Debt!.FromUserId,
                 To = a.Debt!.ToUserId,
-                Amount = a.Debt!.Amount
+                Amount = (decimal)a.Debt!.Amount
             })
             .ToListAsync();
 
@@ -308,11 +308,11 @@ public class DebtsController : ControllerBase
         if (debt.IsSettled)
             return BadRequest(new { message = "Debt is already settled" });
 
-        var remaining = debt.Amount - debt.PaidAmount;
+        var remaining = (decimal)debt.Amount - debt.PaidAmount;
         var settleAmount = Math.Min(request.Amount, remaining);
         debt.PaidAmount += settleAmount;
 
-        if (debt.PaidAmount >= debt.Amount)
+        if (debt.PaidAmount >= (decimal)debt.Amount)
             debt.IsSettled = true;
 
         // Optionally log activity:
@@ -360,12 +360,12 @@ public class DebtsController : ControllerBase
         if (repayment.Amount <= 0)
             return BadRequest("Invalid repayment amount.");
 
-        var remaining = debt.Amount - debt.PaidAmount;
+        var remaining = (decimal)debt.Amount - debt.PaidAmount;
         if (repayment.Amount > remaining)
             return BadRequest($"Repayment exceeds remaining balance ({remaining}).");
 
         debt.PaidAmount += repayment.Amount;
-        if (debt.PaidAmount >= debt.Amount)
+        if (debt.PaidAmount >= (decimal)debt.Amount)
             debt.IsSettled = true;
 
         // Optionally log activity:

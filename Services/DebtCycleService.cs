@@ -99,11 +99,11 @@ public class DebtCycleService
         foreach (var cycle in cycles)
         {
             // Find the minimum amount in the cycle
-            decimal minAmount = cycle.Min(d => d.Amount);
+            decimal minAmount = (decimal)cycle.Min(d => d.Amount);
 
             foreach (var debt in cycle)
             {
-                debt.Amount -= minAmount;
+                debt.Amount -= (double)minAmount;
 
                 if (debt.Amount <= 0)
                 {
