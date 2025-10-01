@@ -27,13 +27,21 @@ public class DebtsController : ControllerBase
         if (int.TryParse(id, out var uid)) return uid;
         return null;
     }
+    private int? GetCurrentUserIdInt()
+    {
+        var idStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        return int.TryParse(idStr, out var id) ? id : (int?)null;
+    }
+
+    private bool IsAdmin() =>
+        string.Equals(User.FindFirstValue(ClaimTypes.Role), "Admin", StringComparison.OrdinalIgnoreCase);
+
     private int GetUserIdOrThrow()
     {
         var uid = TryGetUserId();
         if (uid is null) throw new UnauthorizedAccessException("Invalid token user id.");
         return uid.Value;
     }
-    private bool IsAdmin() => User.IsInRole("Admin");
 
     // =========================================================
     // ADMIN ENDPOINTS (global data)
@@ -136,20 +144,47 @@ public class DebtsController : ControllerBase
     }
 
     // Cycle detection / offset is potentially destructive => admin
-    [Authorize(Roles = "Admin")]
-    [HttpGet("admin/cycles")]
-    public async Task<IActionResult> GetDebtCycles_Admin()
+    [Authorize]
+    [HttpGet("cycles")]
+    public async Task<IActionResult> GetDebtCycles(
+        [FromQuery] string? tag = null,         // "BeforeOffset" | "AfterOffset" | null
+        [FromQuery] string scope = "all"        // "all" (default) | "my"
+    )
     {
+        var q = _context.Debts
+            .AsNoTracking()
+            .Where(d => !d.IsSettled);
+
+        // Optional tag filter
+        if (!string.IsNullOrWhiteSpace(tag))
+            q = q.Where(d => d.Tag == tag);
+
+        // Optional scope filter (non-admins default to "my" if requested "all")
+        if (string.Equals(scope, "my", StringComparison.OrdinalIgnoreCase) || !IsAdmin())
+        {
+            var me = GetCurrentUserIdInt();
+            if (me == null) return Unauthorized();
+            q = q.Where(d => d.FromUserId == me || d.ToUserId == me);
+        }
+
+        var edges = await q
+            .Select(d => new { d.FromUserId, d.ToUserId, d.Amount })
+            .ToListAsync();
+
+        // If your DebtCycleService has a method that accepts the debt list, use it.
+        // Otherwise, adapt it to accept a list; passing the filtered edges is key.
         var cycles = await _debtCycleService.DetectDebtCyclesAsync();
+
         return Ok(cycles);
     }
 
-    [Authorize(Roles = "Admin")]
-    [HttpPost("admin/offset-cycles")]
-    public async Task<IActionResult> OffsetCycles_Admin()
+
+    [Authorize]
+    [HttpPost("offset-cycles")]
+    public async Task<IActionResult> OffsetCycles_Admin([FromQuery] string? tag = "BeforeOffset")
     {
-        var updatedCycles = await _debtCycleService.OffsetDebtCyclesAsync();
-        return Ok(updatedCycles);
+        var updated = await _debtCycleService.OffsetDebtCyclesAsync(tag);
+        return Ok(updated);
     }
 
     // =========================================================
